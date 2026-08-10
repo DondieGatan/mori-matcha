@@ -245,21 +245,23 @@ img { max-width: 100%; display: block; }
 .menu-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 18px;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 .menu-card {
   background: var(--cream-card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
   padding: 22px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: border-color 0.2s ease;
+  transition: background 0.2s ease;
 }
 
-.menu-card:hover { border-color: var(--forest); }
+.menu-card:hover { background: var(--cream-soft); }
 
 .menu-card h3 { font-size: 1.1rem; font-weight: 500; color: var(--text); }
 
@@ -267,7 +269,6 @@ img { max-width: 100%; display: block; }
   flex-direction: column;
   align-items: stretch;
   padding: 0;
-  overflow: hidden;
 }
 
 .menu-card-img {
