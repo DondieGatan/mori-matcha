@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mori Matcha</title>
+<meta name="description" content="Mori Matcha — freshly whisked matcha drinks, made to order.">
+<meta property="og:title" content="Mori Matcha">
+<meta property="og:description" content="Freshly whisked matcha drinks, made to order.">
+<meta property="og:image" content="assets/classic-matcha-latte.jpg">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#2d4433">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%232d4433%22/><text x=%2250%22 y=%2266%22 font-size=%2255%22 text-anchor=%22middle%22 fill=%22%23ece1c8%22 font-family=%22serif%22>M</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="#top" class="nav-brand">
+      <img src="assets/logo.png" alt="" onerror="this.remove();">
+      MORI <span>MATCHA</span>
+    </a>
+    <nav class="nav-links">
+      <a href="#menu">Menu</a>
+      <a href="#about">About</a>
+      <a href="#visit">Visit</a>
+      <a href="#contact" class="nav-cta">Order</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section id="top" class="hero">
+    <div class="hero-glass">
+      <img src="assets/hero-cutout.png" alt="Iced matcha latte being poured, with milk and matcha swirled over ice">
+    </div>
+
+    <div class="hero-content">
+      <p class="eyebrow">Freshly Whisked · Made to Order</p>
+      <img src="assets/logo.png" alt="Mori Matcha" class="hero-logo" onerror="this.style.display='none'; document.getElementById('hero-fallback').style.display='block';">
+      <h1 id="hero-fallback" style="display:none;">MORI<br><span>Matcha</span></h1>
+      <p class="hero-sub">Ceremonial-grade matcha, whisked to order and built the way you like it — classic, creamy, or fruit-forward.</p>
+      <a href="#menu" class="btn btn-primary">View the Menu</a>
+    </div>
+  </section>
+
+  <section class="ritual">
+    <div class="ritual-inner">
+      <div class="ritual-item">
+        <span class="ritual-label">whisk</span>
+        <p>Freshly Prepared</p>
+      </div>
+      <div class="ritual-item">
+        <span class="ritual-label">pour</span>
+        <p>Build Your Matcha</p>
+      </div>
+      <div class="ritual-item">
+        <span class="ritual-label">enjoy</span>
+        <p>Every Sip</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="menu" class="section">
+    <div class="section-inner">
+      <p class="eyebrow center">The Menu</p>
+      <h2 class="section-title center">Build Your Matcha</h2>
+
+      <div class="featured-item">
+        <img src="assets/classic-matcha-latte.jpg" alt="Classic Matcha Latte, matcha powder sifting over a glass" class="featured-img">
+        <div class="featured-text">
+          <h3>Classic Matcha Latte</h3>
+          <p>Our house standard — stone-ground matcha whisked with steamed milk.</p>
+        </div>
+        <span class="price price-lg">₱150</span>
+      </div>
+
+      <div class="menu-grid">
+        <div class="menu-card has-photo">
+          <img src="assets/ube-matcha-coconut.jpg" alt="Ube Matcha Coconut, purple and green layered drink" class="menu-card-img">
+          <div class="menu-card-body">
+            <h3>Ube Matcha Coconut</h3>
+            <span class="price">₱190</span>
+          </div>
+        </div>
+        <div class="menu-card has-photo">
+          <img src="assets/matcha-ube.jpg" alt="Matcha Ube, layered purple and green with walnuts" class="menu-card-img">
+          <div class="menu-card-body">
+            <h3>Matcha Ube</h3>
+            <span class="price">₱170</span>
+          </div>
+        </div>
+        <div class="menu-card has-photo">
+          <img src="assets/chocolate-cookies.jpg" alt="Chocolate Cookies drink topped with cookie crumbs" class="menu-card-img">
+          <div class="menu-card-body">
+            <h3>Chocolate Cookies</h3>
+            <span class="price">₱170</span>
+          </div>
+        </div>
+        <div class="menu-card has-photo">
+          <img src="assets/ube-matcha-latte.jpg" alt="Ube Matcha Latte, purple drink topped with walnuts" class="menu-card-img">
+          <div class="menu-card-body">
+            <h3>Ube Matcha Latte</h3>
+            <span class="price">₱180</span>
+          </div>
+        </div>
+        <div class="menu-card has-photo">
+          <img src="assets/matcha-strawberry.jpg" alt="Matcha Strawberry, matcha over a strawberry layer with a fresh strawberry on top" class="menu-card-img">
+          <div class="menu-card-body">
+            <h3>Matcha Strawberry</h3>
+            <span class="price">₱190</span>
+          </div>
+        </div>
+        <div class="menu-card has-photo">
+          <img src="assets/mango-matcha-bliss.jpg" alt="Mango Matcha Bliss, matcha and mango layered drink topped with mango chunks" class="menu-card-img">
+          <div class="menu-card-body">
+            <h3>Mango Matcha Bliss</h3>
+            <span class="price">₱180</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="section section-alt">
+    <div class="section-inner about-inner">
+      <p class="eyebrow center">Our Story</p>
+      <h2 class="section-title center">About Mori Matcha</h2>
+      <p class="about-text">
+        <!-- TODO: replace with your own story/vibe -->
+        Mori Matcha started with a simple idea: matcha made properly, whisked fresh for every cup,
+        never sitting around pre-made. Every drink on our menu is built to order — classic and clean,
+        or dressed up with ube, strawberry, mango, or chocolate cookies.
+      </p>
+    </div>
+  </section>
+
+  <section id="visit" class="section">
+    <div class="section-inner visit-inner">
+      <div class="visit-card">
+        <p class="eyebrow">Visit Us</p>
+        <h3>Location</h3>
+        <p>Anabu 2-F, Imus, Cavite</p>
+      </div>
+      <div class="visit-card">
+        <p class="eyebrow">Hours <span class="tz-tag">Philippine Time (GMT+8)</span></p>
+        <h3>Opening Hours</h3>
+        <table class="hours-table">
+          <tbody>
+            <tr><th>Monday</th><td>10:00 AM – 2:00 PM &amp; 6:00 PM – 10:00 PM</td></tr>
+            <tr><th>Tuesday</th><td>3:00 PM – 10:00 PM</td></tr>
+            <tr><th>Wednesday</th><td>2:00 PM – 10:00 PM</td></tr>
+            <tr><th>Thursday</th><td>6:00 PM – 10:00 PM</td></tr>
+            <tr><th>Friday</th><td>5:30 PM – 10:00 PM</td></tr>
+            <tr><th>Saturday</th><td>1:00 PM – 11:00 PM</td></tr>
+            <tr><th>Sunday</th><td>9:00 AM – 11:00 PM</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="section section-alt contact-section">
+    <div class="section-inner contact-inner">
+      <p class="eyebrow center">Get in Touch</p>
+      <h2 class="section-title center">Order Your Matcha</h2>
+      <p class="contact-sub">Message us on Instagram, Facebook, or TikTok to place an order.</p>
+      <div class="contact-links">
+        <a href="https://www.instagram.com/mori_matchaofficial/" target="_blank" rel="noopener" class="btn btn-primary">Order via Instagram</a>
+      </div>
+      <div class="social-links">
+        <a href="https://www.instagram.com/mori_matchaofficial/" target="_blank" rel="noopener" class="social-link" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+        </a>
+        <a href="https://www.facebook.com/profile.php?id=61591820885889#" target="_blank" rel="noopener" class="social-link" aria-label="Facebook">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 3h-2a5 5 0 0 0-5 5v2H6v4h2v7h4v-7h3l1-4h-4V8a1 1 0 0 1 1-1h3z"/></svg>
+        </a>
+        <a href="https://www.tiktok.com/@morimatchaofficial?is_from_webapp=1&sender_device=pc" target="_blank" rel="noopener" class="social-link" aria-label="TikTok">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 3c0 2.5 2 4.5 4.5 4.5V10c-1.7 0-3.2-.6-4.5-1.5"/></svg>
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <p>MORI MATCHA &copy; 2026</p>
+</footer>
+
+</body>
+</html>
