@@ -5,10 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mori Matcha</title>
 <meta name="description" content="Mori Matcha — freshly whisked matcha drinks, made to order.">
+<!-- TODO: once this site has a real public URL, replace REPLACE_WITH_SITE_URL below
+     with it (e.g. https://dondiegatan.github.io/mori-matcha/) so link previews work
+     when the page is shared — og:image and og:url both need absolute URLs. -->
 <meta property="og:title" content="Mori Matcha">
+<meta property="og:site_name" content="Mori Matcha">
 <meta property="og:description" content="Freshly whisked matcha drinks, made to order.">
-<meta property="og:image" content="assets/classic-matcha-latte.jpg">
+<meta property="og:image" content="REPLACE_WITH_SITE_URL/assets/classic-matcha-latte.jpg">
+<meta property="og:url" content="REPLACE_WITH_SITE_URL/">
 <meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mori Matcha">
+<meta name="twitter:description" content="Freshly whisked matcha drinks, made to order.">
+<meta name="twitter:image" content="REPLACE_WITH_SITE_URL/assets/classic-matcha-latte.jpg">
 <meta name="theme-color" content="#2d4433">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%232d4433%22/><text x=%2250%22 y=%2266%22 font-size=%2255%22 text-anchor=%22middle%22 fill=%22%23ece1c8%22 font-family=%22serif%22>M</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,15 +60,15 @@
   <section class="ritual">
     <div class="ritual-inner">
       <div class="ritual-item">
-        <span class="ritual-label">whisk</span>
+        <button type="button" class="ritual-label" data-ritual="whisk">whisk</button>
         <p>Freshly Prepared</p>
       </div>
       <div class="ritual-item">
-        <span class="ritual-label">pour</span>
+        <button type="button" class="ritual-label" data-ritual="pour">pour</button>
         <p>Build Your Matcha</p>
       </div>
       <div class="ritual-item">
-        <span class="ritual-label">enjoy</span>
+        <button type="button" class="ritual-label" data-ritual="enjoy">enjoy</button>
         <p>Every Sip</p>
       </div>
     </div>
@@ -70,7 +79,7 @@
       <p class="eyebrow center">The Menu</p>
       <h2 class="section-title center">Build Your Matcha</h2>
 
-      <div class="featured-item reveal featured-glow">
+      <div class="featured-item reveal featured-glow" data-drink="classic-matcha-latte" tabindex="0" role="button" aria-haspopup="dialog">
         <img src="assets/classic-matcha-latte.jpg" alt="Classic Matcha Latte, matcha powder sifting over a glass" class="featured-img">
         <div class="featured-text">
           <h3>Classic Matcha Latte</h3>
@@ -80,42 +89,42 @@
       </div>
 
       <div class="menu-grid">
-        <div class="menu-tile reveal">
+        <div class="menu-tile reveal" data-drink="ube-matcha-coconut" tabindex="0" role="button" aria-haspopup="dialog">
           <img src="assets/ube-matcha-coconut.jpg" alt="Ube Matcha Coconut, purple and green layered drink" loading="lazy">
           <div class="menu-tile-overlay">
             <h3>Ube Matcha Coconut</h3>
             <span class="price">₱190</span>
           </div>
         </div>
-        <div class="menu-tile reveal">
+        <div class="menu-tile reveal" data-drink="matcha-ube" tabindex="0" role="button" aria-haspopup="dialog">
           <img src="assets/matcha-ube.jpg" alt="Matcha Ube, layered purple and green with walnuts" loading="lazy">
           <div class="menu-tile-overlay">
             <h3>Matcha Ube</h3>
             <span class="price">₱170</span>
           </div>
         </div>
-        <div class="menu-tile reveal">
+        <div class="menu-tile reveal" data-drink="chocolate-cookies" tabindex="0" role="button" aria-haspopup="dialog">
           <img src="assets/chocolate-cookies.jpg" alt="Chocolate Cookies drink topped with cookie crumbs" loading="lazy">
           <div class="menu-tile-overlay">
             <h3>Chocolate Cookies</h3>
             <span class="price">₱170</span>
           </div>
         </div>
-        <div class="menu-tile reveal">
+        <div class="menu-tile reveal" data-drink="strawberry-matcha-latte" tabindex="0" role="button" aria-haspopup="dialog">
           <img src="assets/matcha-strawberry.jpg" alt="Strawberry Matcha Latte, matcha over a strawberry layer with a fresh strawberry on top" loading="lazy">
           <div class="menu-tile-overlay">
             <h3>Strawberry Matcha Latte</h3>
             <span class="price">₱190</span>
           </div>
         </div>
-        <div class="menu-tile reveal">
+        <div class="menu-tile reveal" data-drink="matcha-sea-salt" tabindex="0" role="button" aria-haspopup="dialog">
           <img src="assets/matcha-sea-salt.jpg" alt="Matcha Sea Salt, layered matcha and cream drink" loading="lazy">
           <div class="menu-tile-overlay">
             <h3>Matcha Sea Salt</h3>
             <span class="price">₱180</span>
           </div>
         </div>
-        <div class="menu-tile reveal">
+        <div class="menu-tile reveal" data-drink="mango-matcha-bliss" tabindex="0" role="button" aria-haspopup="dialog">
           <img src="assets/mango-matcha-bliss.jpg" alt="Mango Matcha Bliss, matcha and mango layered drink topped with mango chunks" loading="lazy">
           <div class="menu-tile-overlay">
             <h3>Mango Matcha Bliss</h3>
@@ -191,6 +200,20 @@
   <p>MORI MATCHA &copy; 2026</p>
 </footer>
 
+<div class="sugar-modal" id="sugar-modal" role="dialog" aria-modal="true" aria-labelledby="sugar-modal-title" hidden>
+  <div class="sugar-modal-backdrop" data-close></div>
+  <div class="sugar-modal-panel">
+    <button type="button" class="sugar-modal-close" data-close aria-label="Close">&times;</button>
+    <img class="sugar-modal-img" src="" alt="">
+    <div class="sugar-modal-body">
+      <h3 id="sugar-modal-title"></h3>
+      <p class="sugar-modal-hint">Choose your sugar level</p>
+      <div class="sugar-levels" role="group" aria-label="Sugar level"></div>
+      <p class="sugar-amount"></p>
+    </div>
+  </div>
+</div>
+
 <script>
   // Scroll-reveal: fade + rise each menu item into view, staggered
   var revealEls = document.querySelectorAll('.reveal');
@@ -223,6 +246,134 @@
       tile.classList.remove('pop');
       void tile.offsetWidth;
       tile.classList.add('pop');
+    });
+  });
+
+  // Fun ritual-step animations: whisk / pour / enjoy
+  document.querySelectorAll('.ritual-label').forEach(function (btn) {
+    var kind = btn.dataset.ritual;
+    var animClass = kind === 'whisk' ? 'is-whisking' : kind === 'pour' ? 'is-pouring' : 'is-enjoying';
+
+    btn.addEventListener('click', function () {
+      btn.classList.remove(animClass);
+      void btn.offsetWidth;
+      btn.classList.add(animClass);
+      btn.addEventListener('animationend', function handler() {
+        btn.classList.remove(animClass);
+        btn.removeEventListener('animationend', handler);
+      });
+
+      var item = btn.closest('.ritual-item');
+
+      if (kind === 'pour') {
+        var drop = document.createElement('span');
+        drop.className = 'ritual-drop';
+        drop.setAttribute('aria-hidden', 'true');
+        item.appendChild(drop);
+        drop.addEventListener('animationend', function () { drop.remove(); });
+      }
+
+      if (kind === 'enjoy') {
+        for (var i = 0; i < 5; i++) {
+          (function (i) {
+            var sparkle = document.createElement('span');
+            sparkle.className = 'ritual-sparkle';
+            sparkle.textContent = i % 2 === 0 ? '✦' : '✧';
+            sparkle.setAttribute('aria-hidden', 'true');
+            var angle = (i / 5) * Math.PI * 2;
+            var sx = Math.round(Math.cos(angle) * 30);
+            var sy = Math.round(-18 + Math.sin(angle) * 12);
+            sparkle.style.setProperty('--sx', sx + 'px');
+            sparkle.style.setProperty('--sy', sy + 'px');
+            sparkle.style.animationDelay = (i * 25) + 'ms';
+            item.appendChild(sparkle);
+            sparkle.addEventListener('animationend', function () { sparkle.remove(); });
+          })(i);
+        }
+      }
+    });
+  });
+
+  // Sugar level picker
+  // NOTE: matcha-ube amounts are a placeholder (copied from ube-matcha-coconut) —
+  // confirm the real recipe numbers and update below.
+  var SUGAR_DATA = {
+    'classic-matcha-latte': { unit: 'syrup', levels: { '25%': 10, '50%': 15, 'Regular': 25, 'Sweet': 35 } },
+    'mango-matcha-bliss': { unit: 'syrup', levels: { '25%': 5, '50%': 10, 'Regular': 15, 'Sweet': 25 } },
+    'ube-matcha-coconut': { unit: 'condensed milk', levels: { '25%': 5, '50%': 10, 'Regular': 15, 'Sweet': 25 } },
+    'strawberry-matcha-latte': { unit: 'syrup', levels: { '25%': 10, '50%': 15, 'Regular': 20, 'Sweet': 30 } },
+    'chocolate-cookies': { unit: 'syrup', levels: { '25%': 15, '50%': 20, 'Regular': 30, 'Sweet': 40 } },
+    'matcha-sea-salt': { unit: 'condensed milk', levels: { '25%': 10, '50%': 15, 'Regular': 25, 'Sweet': 35 } },
+    'matcha-ube': { unit: 'condensed milk', levels: { '25%': 5, '50%': 10, 'Regular': 15, 'Sweet': 25 } }
+  };
+  var LEVEL_ORDER = ['25%', '50%', 'Regular', 'Sweet'];
+
+  var sugarModal = document.getElementById('sugar-modal');
+  var sugarModalImg = sugarModal.querySelector('.sugar-modal-img');
+  var sugarModalTitle = document.getElementById('sugar-modal-title');
+  var sugarLevelsWrap = sugarModal.querySelector('.sugar-levels');
+  var sugarAmountEl = sugarModal.querySelector('.sugar-amount');
+  var sugarLastFocused = null;
+
+  function openSugarModal(drinkKey, name, imgSrc) {
+    var data = SUGAR_DATA[drinkKey];
+    if (!data) return;
+
+    sugarLastFocused = document.activeElement;
+    sugarModalTitle.textContent = name;
+    sugarModalImg.src = imgSrc;
+    sugarModalImg.alt = name;
+    sugarLevelsWrap.innerHTML = '';
+
+    LEVEL_ORDER.forEach(function (level) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'sugar-level-btn';
+      btn.textContent = level;
+      if (level === 'Regular') btn.classList.add('is-active');
+      btn.addEventListener('click', function () {
+        sugarLevelsWrap.querySelectorAll('.sugar-level-btn').forEach(function (b) { b.classList.remove('is-active'); });
+        btn.classList.add('is-active');
+        sugarAmountEl.textContent = data.levels[level] + ' ml ' + data.unit;
+      });
+      sugarLevelsWrap.appendChild(btn);
+    });
+
+    sugarAmountEl.textContent = data.levels['Regular'] + ' ml ' + data.unit;
+    sugarModal.hidden = false;
+    requestAnimationFrame(function () { sugarModal.classList.add('is-open'); });
+    document.body.style.overflow = 'hidden';
+    sugarModal.querySelector('.sugar-modal-close').focus();
+  }
+
+  function closeSugarModal() {
+    sugarModal.classList.remove('is-open');
+    document.body.style.overflow = '';
+    setTimeout(function () { sugarModal.hidden = true; }, 250);
+    if (sugarLastFocused) sugarLastFocused.focus();
+  }
+
+  sugarModal.querySelectorAll('[data-close]').forEach(function (el) {
+    el.addEventListener('click', closeSugarModal);
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !sugarModal.hidden) closeSugarModal();
+  });
+
+  document.querySelectorAll('[data-drink]').forEach(function (el) {
+    function trigger() {
+      var key = el.dataset.drink;
+      var name = el.querySelector('h3').textContent.trim();
+      var img = el.querySelector('img').getAttribute('src');
+      openSugarModal(key, name, img);
+    }
+    el.addEventListener('click', trigger);
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        trigger();
+      }
     });
   });
 </script>
