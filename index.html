@@ -70,7 +70,7 @@
       <p class="eyebrow center">The Menu</p>
       <h2 class="section-title center">Build Your Matcha</h2>
 
-      <div class="featured-item">
+      <div class="featured-item reveal featured-glow">
         <img src="assets/classic-matcha-latte.jpg" alt="Classic Matcha Latte, matcha powder sifting over a glass" class="featured-img">
         <div class="featured-text">
           <h3>Classic Matcha Latte</h3>
@@ -80,42 +80,42 @@
       </div>
 
       <div class="menu-grid">
-        <div class="menu-tile">
+        <div class="menu-tile reveal">
           <img src="assets/ube-matcha-coconut.jpg" alt="Ube Matcha Coconut, purple and green layered drink" loading="lazy">
           <div class="menu-tile-overlay">
             <h3>Ube Matcha Coconut</h3>
             <span class="price">₱190</span>
           </div>
         </div>
-        <div class="menu-tile">
+        <div class="menu-tile reveal">
           <img src="assets/matcha-ube.jpg" alt="Matcha Ube, layered purple and green with walnuts" loading="lazy">
           <div class="menu-tile-overlay">
             <h3>Matcha Ube</h3>
             <span class="price">₱170</span>
           </div>
         </div>
-        <div class="menu-tile">
+        <div class="menu-tile reveal">
           <img src="assets/chocolate-cookies.jpg" alt="Chocolate Cookies drink topped with cookie crumbs" loading="lazy">
           <div class="menu-tile-overlay">
             <h3>Chocolate Cookies</h3>
             <span class="price">₱170</span>
           </div>
         </div>
-        <div class="menu-tile">
+        <div class="menu-tile reveal">
           <img src="assets/matcha-strawberry.jpg" alt="Strawberry Matcha Latte, matcha over a strawberry layer with a fresh strawberry on top" loading="lazy">
           <div class="menu-tile-overlay">
             <h3>Strawberry Matcha Latte</h3>
             <span class="price">₱190</span>
           </div>
         </div>
-        <div class="menu-tile">
+        <div class="menu-tile reveal">
           <img src="assets/matcha-sea-salt.jpg" alt="Matcha Sea Salt, layered matcha and cream drink" loading="lazy">
           <div class="menu-tile-overlay">
             <h3>Matcha Sea Salt</h3>
             <span class="price">₱180</span>
           </div>
         </div>
-        <div class="menu-tile">
+        <div class="menu-tile reveal">
           <img src="assets/mango-matcha-bliss.jpg" alt="Mango Matcha Bliss, matcha and mango layered drink topped with mango chunks" loading="lazy">
           <div class="menu-tile-overlay">
             <h3>Mango Matcha Bliss</h3>
@@ -170,7 +170,7 @@
       <h2 class="section-title center">Order Your Matcha</h2>
       <p class="contact-sub">Message us on Instagram, Facebook, or TikTok to place an order.</p>
       <div class="contact-links">
-        <a href="https://www.instagram.com/mori_matchaofficial/" target="_blank" rel="noopener" class="btn btn-primary">Order via Instagram</a>
+        <a href="https://ig.me/m/mori_matchaofficial" target="_blank" rel="noopener" class="btn btn-primary">Order Now</a>
       </div>
       <div class="social-links">
         <a href="https://www.instagram.com/mori_matchaofficial/" target="_blank" rel="noopener" class="social-link" aria-label="Instagram">
@@ -190,6 +190,42 @@
 <footer class="footer">
   <p>MORI MATCHA &copy; 2026</p>
 </footer>
+
+<script>
+  // Scroll-reveal: fade + rise each menu item into view, staggered
+  var revealEls = document.querySelectorAll('.reveal');
+  revealEls.forEach(function (el, i) {
+    el.style.transitionDelay = (i % 6) * 70 + 'ms';
+  });
+
+  if ('IntersectionObserver' in window) {
+    var revealObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          revealObserver.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+    revealEls.forEach(function (el) { revealObserver.observe(el); });
+  } else {
+    revealEls.forEach(function (el) { el.classList.add('is-visible'); });
+  }
+
+  // Tap-to-select feedback on menu tiles
+  document.querySelectorAll('.menu-tile').forEach(function (tile) {
+    tile.addEventListener('click', function () {
+      document.querySelectorAll('.menu-tile.is-selected').forEach(function (t) {
+        if (t !== tile) t.classList.remove('is-selected');
+      });
+      tile.classList.toggle('is-selected');
+      tile.classList.remove('pop');
+      void tile.offsetWidth;
+      tile.classList.add('pop');
+    });
+  });
+</script>
 
 </body>
 </html>
