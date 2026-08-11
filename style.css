@@ -989,6 +989,15 @@ img { max-width: 100%; display: block; }
   overflow-y: auto;
 }
 
+.cart-order-number {
+  margin: 0 0 6px;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-dim);
+}
+
 .cart-total-row {
   display: flex;
   justify-content: space-between;

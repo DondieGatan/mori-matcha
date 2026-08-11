@@ -367,6 +367,7 @@
     <div class="cart-items" id="cart-items"></div>
     <p class="cart-empty" id="cart-empty">Your cart is empty — tap a drink on the menu to add one.</p>
     <div class="cart-footer" id="cart-footer" hidden>
+      <p class="cart-order-number" id="cart-order-number"></p>
       <div class="cart-total-row">
         <span>Total</span>
         <span id="cart-total">₱0</span>
@@ -778,11 +779,28 @@
 
   // ---- Cart ----
   var CART_STORAGE_KEY = 'mori-matcha-cart';
+  var ORDER_NUMBER_KEY = 'mori-matcha-order-number';
   var cart = [];
   try {
     var savedCart = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]');
     if (Array.isArray(savedCart)) cart = savedCart;
   } catch (e) { cart = []; }
+
+  var currentOrderNumber = null;
+  try { currentOrderNumber = localStorage.getItem(ORDER_NUMBER_KEY) || null; } catch (e) {}
+
+  function ensureOrderNumber() {
+    if (!currentOrderNumber) {
+      currentOrderNumber = 'MM-' + Date.now().toString(36).toUpperCase();
+      try { localStorage.setItem(ORDER_NUMBER_KEY, currentOrderNumber); } catch (e) {}
+    }
+    return currentOrderNumber;
+  }
+
+  function clearOrderNumber() {
+    currentOrderNumber = null;
+    try { localStorage.removeItem(ORDER_NUMBER_KEY); } catch (e) {}
+  }
 
   var cartModal = document.getElementById('cart-modal');
   var cartItemsWrap = document.getElementById('cart-items');
@@ -803,6 +821,7 @@
   }
 
   function addToCart(drinkKey, name, level, milk, unitPrice, qty) {
+    ensureOrderNumber();
     var existing = cart.find(function (i) { return i.drinkKey === drinkKey && i.level === level && i.milk === milk; });
     if (existing) {
       existing.qty += qty;
@@ -816,6 +835,7 @@
 
   function removeFromCart(id) {
     cart = cart.filter(function (i) { return i.id !== id; });
+    if (cart.length === 0) clearOrderNumber();
     saveCart();
     renderCart();
   }
@@ -871,6 +891,7 @@
 
     cartEmptyEl.hidden = true;
     cartFooterEl.hidden = false;
+    document.getElementById('cart-order-number').textContent = 'Order #' + ensureOrderNumber();
 
     cart.forEach(function (item) {
       var row = document.createElement('div');
@@ -937,7 +958,7 @@
       return item.qty + 'x ' + item.name + ' (' + detail + ') — ' + formatPeso(item.unitPrice * item.qty);
     });
     lines.push('Total: ' + formatPeso(cartTotal()));
-    var text = 'Hi Mori Matcha! I\'d like to order:\n\n' + lines.join('\n');
+    var text = 'Hi Mori Matcha! I\'d like to order (Order #' + ensureOrderNumber() + '):\n\n' + lines.join('\n');
 
     var original = cartCopyBtn.textContent;
     function showCopied() {
@@ -959,20 +980,22 @@
   cartSendBtn.addEventListener('click', function () {
     if (cart.length === 0) return;
 
+    var sentOrderNumber = ensureOrderNumber();
     var original = cartSendBtn.textContent;
-    cartSendBtn.textContent = 'Order Sent — Cart Cleared ✓';
+    cartSendBtn.textContent = 'Order ' + sentOrderNumber + ' Sent ✓';
 
     // Clear the underlying data right away (so it's safe even if the tab
     // closes), but hold off re-rendering to empty until after the
     // confirmation message has had a moment to actually be seen.
     cart = [];
     saveCart();
+    clearOrderNumber();
 
     setTimeout(function () {
       cartSendBtn.textContent = original;
       renderCart();
       closeCartModal();
-    }, 1400);
+    }, 1800);
   });
 
   renderCart();
