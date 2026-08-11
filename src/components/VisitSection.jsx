@@ -1,13 +1,20 @@
 import { HOURS_TABLE, MAP_EMBED_URL, MAP_LINK_URL } from '../data/menu'
 import { useOpenStatus } from '../hooks/useOpenStatus'
+import { useReveal } from '../hooks/useReveal'
 
 export default function VisitSection() {
   const status = useOpenStatus()
+  const mapReveal = useReveal(0)
+  const hoursReveal = useReveal(1)
 
   return (
     <section id="visit" className="section">
       <div className="section-inner visit-inner">
-        <div className="visit-card visit-card-map">
+        <div
+          ref={mapReveal.ref}
+          style={mapReveal.style}
+          className={mapReveal.className + ' visit-card visit-card-map'}
+        >
           <p className="eyebrow">Visit Us</p>
           <h3>Location</h3>
           <p>Anabu 2-F, Imus, Cavite</p>
@@ -26,7 +33,7 @@ export default function VisitSection() {
             referrerPolicy="no-referrer"
           />
         </div>
-        <div className="visit-card">
+        <div ref={hoursReveal.ref} style={hoursReveal.style} className={hoursReveal.className + ' visit-card'}>
           <p className="eyebrow">
             Hours <span className="tz-tag">Philippine Time (GMT+8)</span>
           </p>

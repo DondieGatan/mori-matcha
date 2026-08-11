@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useReveal } from '../hooks/useReveal'
 
 const FAQ_ITEMS = [
   {
@@ -33,11 +34,12 @@ const FAQ_ITEMS = [
   },
 ]
 
-function FaqItem({ item }) {
+function FaqItem({ item, index }) {
   const [expanded, setExpanded] = useState(false)
+  const reveal = useReveal(index)
 
   return (
-    <div className="faq-item">
+    <div ref={reveal.ref} style={reveal.style} className={reveal.className + ' faq-item'}>
       <button type="button" className="faq-question" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)}>
         <span>{item.question}</span>
         <svg className="faq-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
@@ -58,8 +60,8 @@ export default function FaqSection() {
         <p className="eyebrow center">Good to Know</p>
         <h2 className="section-title center">Frequently Asked Questions</h2>
         <div className="faq-list">
-          {FAQ_ITEMS.map((item) => (
-            <FaqItem key={item.question} item={item} />
+          {FAQ_ITEMS.map((item, i) => (
+            <FaqItem key={item.question} item={item} index={i} />
           ))}
         </div>
       </div>

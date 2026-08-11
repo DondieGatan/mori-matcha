@@ -1,7 +1,11 @@
+import { useReveal } from '../hooks/useReveal'
+
 export default function AboutSection() {
+  const reveal = useReveal(0)
+
   return (
     <section id="about" className="section section-alt">
-      <div className="section-inner about-inner">
+      <div ref={reveal.ref} style={reveal.style} className={reveal.className + ' section-inner about-inner'}>
         <p className="eyebrow center">Our Story</p>
         <h2 className="section-title center">About Mori Matcha</h2>
         {/* TODO: replace with your own story/vibe */}

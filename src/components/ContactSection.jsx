@@ -1,9 +1,12 @@
 import { FACEBOOK_URL, INSTAGRAM_PROFILE_URL, TIKTOK_URL } from '../data/menu'
+import { useReveal } from '../hooks/useReveal'
 
 export default function ContactSection() {
+  const reveal = useReveal(0)
+
   return (
     <section id="contact" className="section section-alt contact-section">
-      <div className="section-inner contact-inner">
+      <div ref={reveal.ref} style={reveal.style} className={reveal.className + ' section-inner contact-inner'}>
         <p className="eyebrow center">Get in Touch</p>
         <h2 className="section-title center">Order Your Matcha</h2>
         <p className="contact-sub">Message us on Instagram, Facebook, or TikTok to place an order.</p>
