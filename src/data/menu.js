@@ -1,0 +1,112 @@
+export const SUGAR_DATA = {
+  'classic-matcha-latte': { unit: 'Vanilla Syrup', levels: { '25%': 10, '50%': 15, Regular: 25, Sweet: 35 } },
+  'mango-matcha-bliss': { unit: 'Vanilla Syrup', levels: { '25%': 5, '50%': 10, Regular: 15, Sweet: 25 } },
+  'ube-matcha-latte': { unit: 'Condensed Milk', levels: { '25%': 5, '50%': 10, Regular: 15, Sweet: 25 } },
+  'strawberry-matcha-latte': { unit: 'Vanilla Syrup', levels: { '25%': 10, '50%': 15, Regular: 20, Sweet: 30 } },
+  'chocolate-cookies': { unit: 'Condensed Milk', levels: { '25%': 15, '50%': 20, Regular: 30, Sweet: 40 } },
+  'matcha-sea-salt': { unit: 'Caramel Syrup', levels: { '25%': 10, '50%': 15, Regular: 25, Sweet: 35 } },
+}
+
+export const LEVEL_ORDER = ['25%', '50%', 'Regular', 'Sweet']
+
+export const MILK_SURCHARGE = 20
+export const MILK_OPTIONS = ['Regular Milk', 'Oat Milk', 'Coconut Milk']
+export const MILK_ELIGIBLE_DRINKS = [
+  'classic-matcha-latte',
+  'ube-matcha-latte',
+  'strawberry-matcha-latte',
+  'matcha-sea-salt',
+  'mango-matcha-bliss',
+]
+
+export const FEATURED_DRINK = {
+  key: 'classic-matcha-latte',
+  name: 'Classic Matcha Latte',
+  description: 'Our house standard — stone-ground matcha whisked with steamed milk.',
+  img: '/assets/classic-matcha-latte.jpg',
+  imgAlt: 'Classic Matcha Latte, matcha powder sifting over a glass',
+  price: 150,
+  badge: 'Best Seller',
+}
+
+export const MENU_DRINKS = [
+  {
+    key: 'ube-matcha-latte',
+    name: 'Ube Matcha Latte',
+    img: '/assets/ube-matcha-coconut.jpg',
+    imgAlt: 'Ube Matcha Latte, purple and green layered drink',
+    price: 170,
+  },
+  {
+    key: 'chocolate-cookies',
+    name: 'Chocolate Cookies',
+    img: '/assets/chocolate-cookies.jpg',
+    imgAlt: 'Chocolate Cookies drink topped with cookie crumbs',
+    price: 170,
+  },
+  {
+    key: 'strawberry-matcha-latte',
+    name: 'Strawberry Matcha Latte',
+    img: '/assets/matcha-strawberry.jpg',
+    imgAlt: 'Strawberry Matcha Latte, matcha over a strawberry layer with a fresh strawberry on top',
+    price: 190,
+  },
+  {
+    key: 'matcha-sea-salt',
+    name: 'Matcha Sea Salt',
+    img: '/assets/matcha-sea-salt.jpg',
+    imgAlt: 'Matcha Sea Salt, layered matcha and cream drink',
+    price: 180,
+  },
+  {
+    key: 'mango-matcha-bliss',
+    name: 'Mango Matcha Bliss',
+    img: '/assets/mango-matcha-bliss.jpg',
+    imgAlt: 'Mango Matcha Bliss, matcha and mango layered drink topped with mango chunks',
+    price: 180,
+  },
+]
+
+// Add real reviews here as customers send them (e.g. via Instagram DM).
+// Each entry: { name, rating (1-5), text, drink (optional) }
+export const REVIEWS = [
+  // { name: 'Jane D.', rating: 5, text: 'Best matcha in Imus! The sea salt one is unreal.', drink: 'Matcha Sea Salt' },
+]
+
+export const OPEN_HOURS = {
+  0: [[9 * 60, 23 * 60]], // Sunday 9:00 AM – 11:00 PM
+  1: [
+    [10 * 60, 14 * 60],
+    [18 * 60, 22 * 60],
+  ], // Monday 10:00 AM – 2:00 PM & 6:00 PM – 10:00 PM
+  2: [[15 * 60, 22 * 60]], // Tuesday 3:00 PM – 10:00 PM
+  3: [[14 * 60, 22 * 60]], // Wednesday 2:00 PM – 10:00 PM
+  4: [[18 * 60, 22 * 60]], // Thursday 6:00 PM – 10:00 PM
+  5: [[17 * 60 + 30, 22 * 60]], // Friday 5:30 PM – 10:00 PM
+  6: [[13 * 60, 23 * 60]], // Saturday 1:00 PM – 11:00 PM
+}
+
+export const HOURS_TABLE = [
+  { day: 'Monday', text: '10:00 AM – 2:00 PM & 6:00 PM – 10:00 PM' },
+  { day: 'Tuesday', text: '3:00 PM – 10:00 PM' },
+  { day: 'Wednesday', text: '2:00 PM – 10:00 PM' },
+  { day: 'Thursday', text: '6:00 PM – 10:00 PM' },
+  { day: 'Friday', text: '5:30 PM – 10:00 PM' },
+  { day: 'Saturday', text: '1:00 PM – 11:00 PM' },
+  { day: 'Sunday', text: '9:00 AM – 11:00 PM' },
+]
+
+export const INSTAGRAM_DM_URL = 'https://ig.me/m/mori_matchaofficial'
+export const INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/mori_matchaofficial/'
+export const FACEBOOK_URL = 'https://www.facebook.com/profile.php?id=61591820885889'
+export const TIKTOK_URL = 'https://www.tiktok.com/@morimatchaofficial?is_from_webapp=1&sender_device=pc'
+export const MAP_LINK_URL = 'https://maps.app.goo.gl/4CpyC94XoyicCAAR6'
+export const MAP_EMBED_URL = 'https://maps.google.com/maps?q=14.3649273,120.9313202&z=16&output=embed'
+
+export function formatPeso(n) {
+  return '₱' + n.toLocaleString('en-PH')
+}
+
+export function milkSurcharge(milk) {
+  return milk && milk !== 'Regular Milk' ? MILK_SURCHARGE : 0
+}

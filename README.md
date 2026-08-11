@@ -1,34 +1,54 @@
 # Mori Matcha
 
-A single-page marketing site for Mori Matcha, a matcha café. Plain HTML/CSS,
-no build step, no framework.
+A single-page marketing + ordering site for Mori Matcha, a matcha café.
+React + Vite, no backend — order tracking posts to a Google Sheet via a
+small Apps Script (see `apps-script-order-log.gs`).
 
 ## Structure
 
 ```
-index.html
-style.css
-assets/            — product photos and the hero cutout
+index.html               — Vite entry (head meta, JSON-LD, #root)
+src/
+  main.jsx                — mounts <App />, imports global styles
+  App.jsx                 — page layout / top-level state
+  components/              — one component per page section + the two modals
+  hooks/                    — useCart, useOpenStatus, useReveal, useBump
+  data/                     — menu/drink data, FAQ, order-log config
+  styles/style.css          — global stylesheet (unchanged theme/design)
+public/
+  assets/                   — product photos, hero cutout, icons
+  manifest.json, robots.txt, sitemap.xml
+apps-script-order-log.gs   — paste into Extensions > Apps Script on the
+                              order-tracking Google Sheet
 ```
 
 ## Run it
 
-Open `index.html` directly, or serve it locally:
-
 ```bash
-python -m http.server 8092
+npm install
+npm run dev
 ```
 
-Then visit `http://localhost:8092`.
+Then visit `http://localhost:8092` (port is fixed in `vite.config.js`).
+
+## Build for deployment
+
+```bash
+npm run build
+```
+
+Outputs a static `dist/` folder — deployable to GitHub Pages or any static
+host, same as before.
 
 ## Still to fill in
 
-- `assets/logo.png` — the real brand logo (nav and hero currently fall back
-  to text until this file exists)
+- `public/assets/logo.png` — the real brand logo (nav and hero currently
+  fall back to text until this file exists)
 - About section copy
-- Address and hours
-- Contact / ordering links (phone, Instagram, delivery platform)
+- `REPLACE_WITH_SITE_URL` placeholders in `index.html` (OG tags, JSON-LD),
+  `public/robots.txt`, and `public/sitemap.xml` — fill in once hosted
 
 ## Stack
 
-HTML · CSS · Google Fonts (Cormorant Garamond, Jost)
+React 19 · Vite · Google Fonts (Cormorant Garamond, Jost) · Google Apps
+Script (order log)
