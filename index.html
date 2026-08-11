@@ -245,38 +245,7 @@
       </div>
       <button type="button" class="btn btn-ghost" id="cart-copy-btn">Copy Order for Instagram</button>
       <a href="https://ig.me/m/mori_matchaofficial" target="_blank" rel="noopener" class="btn btn-primary">Send Order via Instagram</a>
-
-      <button type="button" class="payment-toggle" id="payment-toggle" aria-expanded="false" aria-controls="payment-panel-wrap">
-        <span>How to Pay</span>
-        <svg class="payment-toggle-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-      </button>
-
-      <div class="payment-panel-wrap" id="payment-panel-wrap" hidden>
-        <div class="payment-tabs" role="tablist">
-          <button type="button" class="payment-tab is-active" data-pay="gcash" role="tab" aria-selected="true">GCash</button>
-          <button type="button" class="payment-tab" data-pay="bdo" role="tab" aria-selected="false">BDO Transfer</button>
-        </div>
-
-        <div class="payment-panel" data-pay-panel="gcash">
-          <img src="assets/gcash-qr.jpg" alt="GCash QR code for Mori Matcha" class="payment-qr">
-          <dl class="payment-details">
-            <div><dt>Name</dt><dd>[REDACTED]</dd></div>
-            <div><dt>Number</dt><dd>[REDACTED]</dd></div>
-          </dl>
-        </div>
-
-        <div class="payment-panel" data-pay-panel="bdo" hidden>
-          <img src="assets/bdo_qr_code.jpg" alt="BDO QR code for Mori Matcha" class="payment-qr">
-          <dl class="payment-details">
-            <div><dt>Account Name</dt><dd>[REDACTED]</dd></div>
-            <div><dt>Account Number</dt><dd>[REDACTED]</dd></div>
-            <div><dt>Bank</dt><dd>BDO — SM Hypermarket Imus, City of Imus, Cavite</dd></div>
-            <div><dt>Swift Code</dt><dd>[REDACTED]</dd></div>
-          </dl>
-        </div>
-
-        <p class="payment-note">Please send a screenshot of your payment confirmation via Instagram so we can confirm your order.</p>
-      </div>
+      <p class="cart-payment-note">We'll reply with GCash / bank transfer details once we confirm your order.</p>
     </div>
   </div>
 </div>
@@ -675,33 +644,6 @@
     } else {
       window.prompt('Copy your order:', text);
     }
-  });
-
-  // How to Pay: collapsible panel + GCash/BDO tabs
-  var paymentToggle = document.getElementById('payment-toggle');
-  var paymentPanelWrap = document.getElementById('payment-panel-wrap');
-
-  paymentToggle.addEventListener('click', function () {
-    var expanded = paymentToggle.getAttribute('aria-expanded') === 'true';
-    paymentToggle.setAttribute('aria-expanded', String(!expanded));
-    paymentToggle.classList.toggle('is-expanded', !expanded);
-    paymentPanelWrap.hidden = expanded;
-  });
-
-  document.querySelectorAll('.payment-tab').forEach(function (tab) {
-    tab.addEventListener('click', function () {
-      document.querySelectorAll('.payment-tab').forEach(function (t) {
-        t.classList.remove('is-active');
-        t.setAttribute('aria-selected', 'false');
-      });
-      tab.classList.add('is-active');
-      tab.setAttribute('aria-selected', 'true');
-
-      var key = tab.dataset.pay;
-      document.querySelectorAll('.payment-panel').forEach(function (panel) {
-        panel.hidden = panel.dataset.payPanel !== key;
-      });
-    });
   });
 
   renderCart();
