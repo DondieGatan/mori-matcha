@@ -525,6 +525,15 @@ img { max-width: 100%; display: block; }
 .visit-card h3 { font-size: 1.6rem; margin: 6px 0 10px; }
 .visit-card p { color: var(--text-dim); margin: 0; }
 
+.map-embed {
+  display: block;
+  width: 100%;
+  height: 220px;
+  margin-top: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
 .map-link {
   display: inline-flex;
   align-items: center;
