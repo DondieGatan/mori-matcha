@@ -37,6 +37,10 @@
       <a href="#menu">Menu</a>
       <a href="#about">About</a>
       <a href="#visit">Visit</a>
+      <button type="button" class="cart-btn" id="cart-open-btn" aria-haspopup="dialog" aria-label="View cart">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 4h2l2.2 11.4a2 2 0 0 0 2 1.6h7.1a2 2 0 0 0 2-1.6L20 8H6"/><circle cx="10" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>
+        <span class="cart-count" id="cart-count" hidden>0</span>
+      </button>
       <a href="#contact" class="nav-cta">Order</a>
     </nav>
   </div>
@@ -209,7 +213,38 @@
       <h3 id="sugar-modal-title"></h3>
       <p class="sugar-modal-hint">Choose your sugar level</p>
       <div class="sugar-levels" role="group" aria-label="Sugar level"></div>
-      <p class="sugar-amount"></p>
+      <p class="sugar-amount-hint" id="sugar-amount-hint"></p>
+
+      <div class="qty-row">
+        <span class="qty-label">Quantity</span>
+        <div class="qty-stepper">
+          <button type="button" class="qty-btn" data-qty="dec" aria-label="Decrease quantity">&minus;</button>
+          <span class="qty-value" id="modal-qty">1</span>
+          <button type="button" class="qty-btn" data-qty="inc" aria-label="Increase quantity">+</button>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-primary add-to-cart-btn" id="add-to-cart-btn">Add to Cart — ₱0</button>
+    </div>
+  </div>
+</div>
+
+<div class="cart-modal" id="cart-modal" role="dialog" aria-modal="true" aria-labelledby="cart-modal-title" hidden>
+  <div class="sugar-modal-backdrop" data-cart-close></div>
+  <div class="cart-panel">
+    <div class="cart-header">
+      <h3 id="cart-modal-title">Your Order</h3>
+      <button type="button" class="sugar-modal-close" data-cart-close aria-label="Close cart">&times;</button>
+    </div>
+    <div class="cart-items" id="cart-items"></div>
+    <p class="cart-empty" id="cart-empty">Your cart is empty — tap a drink on the menu to add one.</p>
+    <div class="cart-footer" id="cart-footer" hidden>
+      <div class="cart-total-row">
+        <span>Total</span>
+        <span id="cart-total">₱0</span>
+      </div>
+      <button type="button" class="btn btn-ghost" id="cart-copy-btn">Copy Order for Instagram</button>
+      <a href="https://ig.me/m/mori_matchaofficial" target="_blank" rel="noopener" class="btn btn-primary">Send Order via Instagram</a>
     </div>
   </div>
 </div>
@@ -312,12 +347,34 @@
   var sugarModalImg = sugarModal.querySelector('.sugar-modal-img');
   var sugarModalTitle = document.getElementById('sugar-modal-title');
   var sugarLevelsWrap = sugarModal.querySelector('.sugar-levels');
-  var sugarAmountEl = sugarModal.querySelector('.sugar-amount');
+  var sugarAmountHint = document.getElementById('sugar-amount-hint');
+  var modalQtyEl = document.getElementById('modal-qty');
+  var addToCartBtn = document.getElementById('add-to-cart-btn');
   var sugarLastFocused = null;
 
-  function openSugarModal(drinkKey, name, imgSrc) {
+  var activeDrink = null; // { key, name, price, level }
+  var activeQty = 1;
+
+  function parsePrice(text) {
+    return parseInt(String(text).replace(/[^\d]/g, ''), 10) || 0;
+  }
+
+  function formatPeso(n) {
+    return '₱' + n.toLocaleString('en-PH');
+  }
+
+  function refreshAddToCartLabel() {
+    if (!activeDrink) return;
+    addToCartBtn.textContent = 'Add to Cart — ' + formatPeso(activeDrink.price * activeQty);
+  }
+
+  function openSugarModal(drinkKey, name, imgSrc, price) {
     var data = SUGAR_DATA[drinkKey];
     if (!data) return;
+
+    activeDrink = { key: drinkKey, name: name, price: price, level: 'Regular' };
+    activeQty = 1;
+    modalQtyEl.textContent = activeQty;
 
     sugarLastFocused = document.activeElement;
     sugarModalTitle.textContent = name;
@@ -334,12 +391,15 @@
       btn.addEventListener('click', function () {
         sugarLevelsWrap.querySelectorAll('.sugar-level-btn').forEach(function (b) { b.classList.remove('is-active'); });
         btn.classList.add('is-active');
-        sugarAmountEl.textContent = data.levels[level] + ' ml ' + data.unit;
+        activeDrink.level = level;
+        sugarAmountHint.textContent = data.levels[level] + ' ml ' + data.unit;
       });
       sugarLevelsWrap.appendChild(btn);
     });
 
-    sugarAmountEl.textContent = data.levels['Regular'] + ' ml ' + data.unit;
+    sugarAmountHint.textContent = data.levels['Regular'] + ' ml ' + data.unit;
+    refreshAddToCartLabel();
+
     sugarModal.hidden = false;
     requestAnimationFrame(function () { sugarModal.classList.add('is-open'); });
     document.body.style.overflow = 'hidden';
@@ -358,7 +418,10 @@
   });
 
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && !sugarModal.hidden) closeSugarModal();
+    if (e.key === 'Escape') {
+      if (!sugarModal.hidden) closeSugarModal();
+      if (!cartModal.hidden) closeCartModal();
+    }
   });
 
   document.querySelectorAll('[data-drink]').forEach(function (el) {
@@ -366,7 +429,8 @@
       var key = el.dataset.drink;
       var name = el.querySelector('h3').textContent.trim();
       var img = el.querySelector('img').getAttribute('src');
-      openSugarModal(key, name, img);
+      var price = parsePrice(el.querySelector('.price').textContent);
+      openSugarModal(key, name, img, price);
     }
     el.addEventListener('click', trigger);
     el.addEventListener('keydown', function (e) {
@@ -376,6 +440,195 @@
       }
     });
   });
+
+  sugarModal.querySelectorAll('[data-qty]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (btn.dataset.qty === 'inc') activeQty = Math.min(activeQty + 1, 20);
+      else activeQty = Math.max(activeQty - 1, 1);
+      modalQtyEl.textContent = activeQty;
+      refreshAddToCartLabel();
+    });
+  });
+
+  addToCartBtn.addEventListener('click', function () {
+    if (!activeDrink) return;
+    addToCart(activeDrink.key, activeDrink.name, activeDrink.level, activeDrink.price, activeQty);
+
+    var original = addToCartBtn.textContent;
+    addToCartBtn.textContent = 'Added ✓';
+    addToCartBtn.disabled = true;
+    setTimeout(function () {
+      closeSugarModal();
+      setTimeout(function () {
+        addToCartBtn.textContent = original;
+        addToCartBtn.disabled = false;
+      }, 300);
+    }, 550);
+  });
+
+  // ---- Cart ----
+  var CART_STORAGE_KEY = 'mori-matcha-cart';
+  var cart = [];
+  try {
+    var savedCart = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]');
+    if (Array.isArray(savedCart)) cart = savedCart;
+  } catch (e) { cart = []; }
+
+  var cartModal = document.getElementById('cart-modal');
+  var cartItemsWrap = document.getElementById('cart-items');
+  var cartEmptyEl = document.getElementById('cart-empty');
+  var cartFooterEl = document.getElementById('cart-footer');
+  var cartTotalEl = document.getElementById('cart-total');
+  var cartCountEl = document.getElementById('cart-count');
+  var cartOpenBtn = document.getElementById('cart-open-btn');
+  var cartCopyBtn = document.getElementById('cart-copy-btn');
+  var cartLastFocused = null;
+
+  function saveCart() {
+    try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart)); } catch (e) {}
+  }
+
+  function addToCart(drinkKey, name, level, unitPrice, qty) {
+    var existing = cart.find(function (i) { return i.drinkKey === drinkKey && i.level === level; });
+    if (existing) {
+      existing.qty += qty;
+    } else {
+      cart.push({ id: drinkKey + '|' + level + '|' + Date.now(), drinkKey: drinkKey, name: name, level: level, unitPrice: unitPrice, qty: qty });
+    }
+    saveCart();
+    renderCart();
+    bumpCartIcon();
+  }
+
+  function removeFromCart(id) {
+    cart = cart.filter(function (i) { return i.id !== id; });
+    saveCart();
+    renderCart();
+  }
+
+  function changeCartQty(id, delta) {
+    var item = cart.find(function (i) { return i.id === id; });
+    if (!item) return;
+    item.qty += delta;
+    if (item.qty <= 0) {
+      removeFromCart(id);
+      return;
+    }
+    saveCart();
+    renderCart();
+  }
+
+  function cartTotal() {
+    return cart.reduce(function (sum, i) { return sum + i.unitPrice * i.qty; }, 0);
+  }
+
+  function cartCount() {
+    return cart.reduce(function (sum, i) { return sum + i.qty; }, 0);
+  }
+
+  function bumpCartIcon() {
+    cartOpenBtn.classList.remove('bump');
+    void cartOpenBtn.offsetWidth;
+    cartOpenBtn.classList.add('bump');
+  }
+
+  function renderCart() {
+    var count = cartCount();
+    if (count > 0) {
+      cartCountEl.hidden = false;
+      cartCountEl.textContent = count;
+    } else {
+      cartCountEl.hidden = true;
+    }
+
+    cartItemsWrap.innerHTML = '';
+
+    if (cart.length === 0) {
+      cartEmptyEl.hidden = false;
+      cartFooterEl.hidden = true;
+      return;
+    }
+
+    cartEmptyEl.hidden = true;
+    cartFooterEl.hidden = false;
+
+    cart.forEach(function (item) {
+      var row = document.createElement('div');
+      row.className = 'cart-item';
+      row.innerHTML =
+        '<div class="cart-item-info">' +
+          '<strong></strong>' +
+          '<span class="cart-item-meta"></span>' +
+        '</div>' +
+        '<div class="cart-item-qty">' +
+          '<button type="button" class="qty-btn" data-action="dec" aria-label="Decrease quantity">&minus;</button>' +
+          '<span class="qty-value"></span>' +
+          '<button type="button" class="qty-btn" data-action="inc" aria-label="Increase quantity">+</button>' +
+        '</div>' +
+        '<span class="cart-item-price"></span>' +
+        '<button type="button" class="cart-item-remove" aria-label="Remove item">&times;</button>';
+
+      row.querySelector('.cart-item-info strong').textContent = item.name;
+      row.querySelector('.cart-item-meta').textContent = item.level + ' sugar';
+      row.querySelector('.qty-value').textContent = item.qty;
+      row.querySelector('.cart-item-price').textContent = formatPeso(item.unitPrice * item.qty);
+
+      row.querySelector('[data-action="dec"]').addEventListener('click', function () { changeCartQty(item.id, -1); });
+      row.querySelector('[data-action="inc"]').addEventListener('click', function () { changeCartQty(item.id, 1); });
+      row.querySelector('.cart-item-remove').addEventListener('click', function () { removeFromCart(item.id); });
+
+      cartItemsWrap.appendChild(row);
+    });
+
+    cartTotalEl.textContent = formatPeso(cartTotal());
+  }
+
+  function openCartModal() {
+    cartLastFocused = document.activeElement;
+    renderCart();
+    cartModal.hidden = false;
+    requestAnimationFrame(function () { cartModal.classList.add('is-open'); });
+    document.body.style.overflow = 'hidden';
+    cartModal.querySelector('.sugar-modal-close').focus();
+  }
+
+  function closeCartModal() {
+    cartModal.classList.remove('is-open');
+    document.body.style.overflow = '';
+    setTimeout(function () { cartModal.hidden = true; }, 250);
+    if (cartLastFocused) cartLastFocused.focus();
+  }
+
+  cartModal.querySelectorAll('[data-cart-close]').forEach(function (el) {
+    el.addEventListener('click', closeCartModal);
+  });
+
+  cartOpenBtn.addEventListener('click', openCartModal);
+
+  cartCopyBtn.addEventListener('click', function () {
+    if (cart.length === 0) return;
+    var lines = cart.map(function (item) {
+      return item.qty + 'x ' + item.name + ' (' + item.level + ' sugar) — ' + formatPeso(item.unitPrice * item.qty);
+    });
+    lines.push('Total: ' + formatPeso(cartTotal()));
+    var text = 'Hi Mori Matcha! I\'d like to order:\n\n' + lines.join('\n');
+
+    var original = cartCopyBtn.textContent;
+    function showCopied() {
+      cartCopyBtn.textContent = 'Copied ✓';
+      setTimeout(function () { cartCopyBtn.textContent = original; }, 1500);
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(showCopied).catch(function () {
+        window.prompt('Copy your order:', text);
+      });
+    } else {
+      window.prompt('Copy your order:', text);
+    }
+  });
+
+  renderCart();
 </script>
 
 </body>
