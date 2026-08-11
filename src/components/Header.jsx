@@ -31,9 +31,6 @@ export default function Header({ cartCount, bumpKey, onOpenCart }) {
               {cartCount}
             </span>
           </button>
-          <a href="#contact" className="nav-cta">
-            Order
-          </a>
         </nav>
       </div>
     </header>

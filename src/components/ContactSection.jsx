@@ -1,4 +1,4 @@
-import { FACEBOOK_URL, INSTAGRAM_DM_URL, INSTAGRAM_PROFILE_URL, TIKTOK_URL } from '../data/menu'
+import { FACEBOOK_URL, INSTAGRAM_PROFILE_URL, TIKTOK_URL } from '../data/menu'
 
 export default function ContactSection() {
   return (
@@ -7,11 +7,6 @@ export default function ContactSection() {
         <p className="eyebrow center">Get in Touch</p>
         <h2 className="section-title center">Order Your Matcha</h2>
         <p className="contact-sub">Message us on Instagram, Facebook, or TikTok to place an order.</p>
-        <div className="contact-links">
-          <a href={INSTAGRAM_DM_URL} target="_blank" rel="noopener" className="btn btn-primary">
-            Order Now
-          </a>
-        </div>
         <div className="social-links">
           <a href={INSTAGRAM_PROFILE_URL} target="_blank" rel="noopener" className="social-link" aria-label="Instagram">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8">
