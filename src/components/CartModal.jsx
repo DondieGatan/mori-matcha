@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { INSTAGRAM_DM_URL, formatPeso } from '../data/menu'
-import { submitOrderToSheet } from '../data/orderLog'
+import { submitOrder } from '../data/orderLog'
 
 function buildOrderLines(cart) {
   return cart.map((item) => {
@@ -8,6 +8,16 @@ function buildOrderLines(cart) {
     if (item.milk && item.milk !== 'Regular Milk') detail += ', ' + item.milk
     return item.qty + 'x ' + item.name + ' (' + detail + ') — ' + formatPeso(item.unitPrice * item.qty)
   })
+}
+
+function buildOrderItems(cart) {
+  return cart.map((item) => ({
+    name: item.name,
+    level: item.level,
+    milk: item.milk,
+    qty: item.qty,
+    unitPrice: item.unitPrice,
+  }))
 }
 
 export default function CartModal({ isOpen, cart, orderNumber, cartTotal, onClose, onChangeQty, onRemove, onClearAll }) {
@@ -75,7 +85,7 @@ export default function CartModal({ isOpen, cart, orderNumber, cartTotal, onClos
 
     const sentOrderNumber = orderNumber
     const totalText = formatPeso(cartTotal)
-    submitOrderToSheet(sentOrderNumber, buildOrderLines(cart).join('; '), totalText)
+    submitOrder(sentOrderNumber, buildOrderItems(cart), cartTotal)
 
     setSentSnapshot({ orderNumber: sentOrderNumber, totalText })
     onClearAll()
