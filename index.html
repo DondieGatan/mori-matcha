@@ -20,6 +20,8 @@
 <meta name="twitter:image" content="REPLACE_WITH_SITE_URL/assets/classic-matcha-latte.jpg">
 <meta name="theme-color" content="#2d4433">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%232d4433%22/><text x=%2250%22 y=%2266%22 font-size=%2255%22 text-anchor=%22middle%22 fill=%22%23ece1c8%22 font-family=%22serif%22>M</text></svg>">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -49,7 +51,10 @@
 <main>
   <section id="top" class="hero">
     <div class="hero-glass">
-      <img src="assets/hero-cutout.png" alt="Iced matcha latte being poured, with milk and matcha swirled over ice">
+      <picture>
+        <source srcset="assets/hero-cutout.webp" type="image/webp">
+        <img src="assets/hero-cutout.png" alt="Iced matcha latte being poured, with milk and matcha swirled over ice">
+      </picture>
     </div>
 
     <div class="hero-content">
@@ -84,7 +89,10 @@
       <h2 class="section-title center">Build Your Matcha</h2>
 
       <div class="featured-item reveal featured-glow" data-drink="classic-matcha-latte" tabindex="0" role="button" aria-haspopup="dialog">
-        <img src="assets/classic-matcha-latte.jpg" alt="Classic Matcha Latte, matcha powder sifting over a glass" class="featured-img">
+        <div class="featured-img-wrap">
+          <img src="assets/classic-matcha-latte.jpg" alt="Classic Matcha Latte, matcha powder sifting over a glass" class="featured-img">
+          <span class="menu-badge">Best Seller</span>
+        </div>
         <div class="featured-text">
           <h3>Classic Matcha Latte</h3>
           <p>Our house standard — stone-ground matcha whisked with steamed milk.</p>
@@ -123,6 +131,7 @@
         </div>
         <div class="menu-tile reveal" data-drink="matcha-sea-salt" tabindex="0" role="button" aria-haspopup="dialog">
           <img src="assets/matcha-sea-salt.jpg" alt="Matcha Sea Salt, layered matcha and cream drink" loading="lazy">
+          <span class="menu-badge menu-badge-new">New</span>
           <div class="menu-tile-overlay">
             <h3>Matcha Sea Salt</h3>
             <span class="price">₱180</span>
@@ -177,6 +186,80 @@
     </div>
   </section>
 
+  <section id="faq" class="section">
+    <div class="section-inner faq-inner">
+      <p class="eyebrow center">Good to Know</p>
+      <h2 class="section-title center">Frequently Asked Questions</h2>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false">
+            <span>How do I order?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="faq-answer" hidden>
+            <p>Tap any drink on <a href="#menu">the menu</a>, pick your sugar level and quantity, and add it to your cart. When you're ready, open your cart and send the order to us on Instagram.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false">
+            <span>Can I choose how sweet my drink is?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="faq-answer" hidden>
+            <p>Yes — every drink lets you pick 25%, 50%, Regular, or Sweet before adding it to your cart, so two orders of the same drink can each be made exactly how each person likes it.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false">
+            <span>How do I pay?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="faq-answer" hidden>
+            <p>Send your order through Instagram and we'll confirm it and reply with GCash or bank transfer details.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false">
+            <span>Where are you located, and what are your hours?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="faq-answer" hidden>
+            <p>We're at Anabu 2-F, Imus, Cavite. Hours vary by day — see the full schedule in <a href="#visit">Visit Us</a>.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button type="button" class="faq-question" aria-expanded="false">
+            <span>Do you offer delivery?</span>
+            <svg class="faq-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="faq-answer" hidden>
+            <p>Message us on Instagram with your order and location and we'll let you know the best way to get it to you.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="feedback" class="section">
+    <div class="section-inner feedback-inner">
+      <p class="eyebrow center">What People Are Saying</p>
+      <h2 class="section-title center">Customer Feedback</h2>
+
+      <div class="feedback-grid" id="feedback-grid"></div>
+      <p class="feedback-empty" id="feedback-empty" hidden>No reviews yet — be the first to share your experience!</p>
+
+      <div class="feedback-cta">
+        <p>Loved your matcha? We'd love to hear about it.</p>
+        <a href="https://ig.me/m/mori_matchaofficial" target="_blank" rel="noopener" class="btn btn-ghost">Leave Feedback via Instagram</a>
+      </div>
+    </div>
+  </section>
+
   <section id="contact" class="section section-alt contact-section">
     <div class="section-inner contact-inner">
       <p class="eyebrow center">Get in Touch</p>
@@ -196,6 +279,14 @@
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5"/><path d="M14 3c0 2.5 2 4.5 4.5 4.5V10c-1.7 0-3.2-.6-4.5-1.5"/></svg>
         </a>
       </div>
+
+      <a href="https://www.instagram.com/mori_matchaofficial/" target="_blank" rel="noopener" class="follow-card">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>
+        <span>
+          <strong>@mori_matchaofficial</strong>
+          <em>Follow along for new drinks &amp; daily specials</em>
+        </span>
+      </a>
     </div>
   </section>
 </main>
@@ -257,7 +348,68 @@
   <span class="cart-fab-total" id="cart-fab-total">₱0</span>
 </button>
 
+<button type="button" class="back-to-top" id="back-to-top" aria-label="Back to top">
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+</button>
+
 <script>
+  // Back to top
+  var backToTopBtn = document.getElementById('back-to-top');
+  window.addEventListener('scroll', function () {
+    backToTopBtn.classList.toggle('is-visible', window.scrollY > 600);
+  });
+  backToTopBtn.addEventListener('click', function () {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // FAQ accordion
+  document.querySelectorAll('.faq-question').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var answer = btn.nextElementSibling;
+      var expanded = btn.getAttribute('aria-expanded') === 'true';
+      btn.setAttribute('aria-expanded', String(!expanded));
+      answer.hidden = expanded;
+    });
+  });
+
+  // Customer feedback
+  // Add real reviews here as customers send them (e.g. via Instagram DM).
+  // Each entry: { name, rating (1-5), text, drink (optional) }
+  var REVIEWS = [
+    // { name: 'Jane D.', rating: 5, text: 'Best matcha in Imus! The sea salt one is unreal.', drink: 'Matcha Sea Salt' },
+  ];
+
+  (function renderFeedback() {
+    var grid = document.getElementById('feedback-grid');
+    var emptyMsg = document.getElementById('feedback-empty');
+
+    if (REVIEWS.length === 0) {
+      emptyMsg.hidden = false;
+      return;
+    }
+
+    REVIEWS.forEach(function (review) {
+      var card = document.createElement('div');
+      card.className = 'feedback-card';
+
+      var stars = '';
+      for (var i = 0; i < 5; i++) {
+        stars += i < review.rating ? '★' : '☆';
+      }
+
+      card.innerHTML =
+        '<div class="feedback-stars" aria-label="' + review.rating + ' out of 5 stars"></div>' +
+        '<p class="feedback-text"></p>' +
+        '<p class="feedback-meta"></p>';
+
+      card.querySelector('.feedback-stars').textContent = stars;
+      card.querySelector('.feedback-text').textContent = '“' + review.text + '”';
+      card.querySelector('.feedback-meta').textContent = review.name + (review.drink ? ' · ' + review.drink : '');
+
+      grid.appendChild(card);
+    });
+  })();
+
   // Scroll-reveal: fade + rise each menu item into view, staggered
   var revealEls = document.querySelectorAll('.reveal');
   revealEls.forEach(function (el, i) {

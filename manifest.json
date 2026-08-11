@@ -1,0 +1,23 @@
+{
+  "name": "Mori Matcha",
+  "short_name": "Mori Matcha",
+  "description": "Freshly whisked matcha drinks, made to order.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ece1c8",
+  "theme_color": "#2d4433",
+  "icons": [
+    {
+      "src": "assets/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

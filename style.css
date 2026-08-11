@@ -347,14 +347,34 @@ img { max-width: 100%; display: block; }
   outline-offset: 3px;
 }
 
+.featured-img-wrap { position: relative; flex-shrink: 0; }
+
 .featured-img {
   width: 130px;
   height: 160px;
   object-fit: cover;
   object-position: center;
   border-radius: 14px;
-  flex-shrink: 0;
+  display: block;
 }
+
+.menu-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--forest);
+  color: var(--cream-soft);
+  font-family: 'Jost', sans-serif;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 10px rgba(20, 26, 15, 0.3);
+}
+
+.menu-badge-new { background: #b3453d; }
 
 .featured-text { flex: 1; }
 .featured-text h3 { font-size: 1.5rem; margin-bottom: 6px; }
@@ -986,4 +1006,166 @@ img { max-width: 100%; display: block; }
   font-size: 0.78rem;
   color: var(--text-dim);
   line-height: 1.5;
+}
+
+/* Back to top */
+.back-to-top {
+  position: fixed;
+  left: 22px;
+  bottom: 22px;
+  z-index: 85;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--cream-soft);
+  color: var(--forest);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(45, 68, 51, 0.18);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 0.25s ease, transform 0.25s ease, background 0.2s ease;
+}
+
+.back-to-top:hover { background: var(--forest); color: var(--cream-soft); }
+
+.back-to-top.is-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+
+@media (max-width: 600px) {
+  .back-to-top { bottom: 84px; left: 16px; width: 38px; height: 38px; }
+}
+
+/* FAQ */
+.faq-inner { max-width: 720px; }
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.faq-item {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--cream-card);
+  overflow: hidden;
+}
+
+.faq-question {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-family: 'Jost', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.faq-icon { flex-shrink: 0; color: var(--forest); transition: transform 0.25s ease; }
+
+.faq-question[aria-expanded="true"] .faq-icon { transform: rotate(180deg); }
+
+.faq-answer[hidden] { display: none; }
+
+.faq-answer {
+  padding: 0 18px 18px;
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.faq-answer a { color: var(--forest); text-decoration: underline; text-underline-offset: 2px; }
+
+/* Follow card */
+.follow-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: 420px;
+  margin: 28px auto 0;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--cream-card);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.follow-card:hover { border-color: var(--forest); transform: translateY(-2px); }
+
+.follow-card svg { flex-shrink: 0; color: var(--forest); }
+
+.follow-card span { display: flex; flex-direction: column; gap: 2px; text-align: left; }
+
+.follow-card strong { font-size: 0.92rem; }
+
+.follow-card em {
+  font-style: normal;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+/* Customer feedback */
+.feedback-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin-bottom: 8px;
+}
+
+.feedback-card {
+  background: var(--cream-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.feedback-stars {
+  color: #d9a441;
+  font-size: 1rem;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.feedback-text {
+  margin: 0 0 12px;
+  color: var(--text);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.feedback-meta {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.feedback-empty {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 30px 0;
+  font-size: 0.92rem;
+}
+
+.feedback-cta {
+  text-align: center;
+  margin-top: 28px;
+}
+
+.feedback-cta p {
+  margin: 0 0 14px;
+  color: var(--text-dim);
+  font-size: 0.9rem;
 }
