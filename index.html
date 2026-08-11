@@ -802,32 +802,25 @@
     try { localStorage.removeItem(ORDER_NUMBER_KEY); } catch (e) {}
   }
 
-  // ---- Order log (Google Form -> Google Sheet) ----
-  // 1. Create a Google Form with 3 short-answer/paragraph questions, in this
-  //    order: Order Number, Items, Total. Turn on its linked Sheet under
-  //    Responses so submissions land in a spreadsheet automatically.
-  // 2. In the form editor, open the "..." menu > "Get pre-filled link", fill
-  //    each question with a dummy value, click "Get link", then open that
-  //    link and look at its query string: each question shows up as
-  //    entry.XXXXXXXXXX=... — copy those three entry IDs below.
-  // 3. Replace GOOGLE_FORM_ACTION_URL with the form's own URL, but change
-  //    "/viewform" at the end to "/formResponse".
-  // Leaving GOOGLE_FORM_ACTION_URL blank keeps this a no-op.
-  var GOOGLE_FORM_ACTION_URL = '';
-  var GOOGLE_FORM_FIELDS = {
-    orderNumber: 'entry.REPLACE_ME',
-    items: 'entry.REPLACE_ME',
-    total: 'entry.REPLACE_ME'
-  };
+  // ---- Order log (Google Sheet via Apps Script) ----
+  // 1. Create a Google Sheet, then in it go to Extensions > Apps Script.
+  // 2. Paste the doPost() script from apps-script-order-log.gs (next to this
+  //    file) into the editor, replacing the placeholder code, then save.
+  // 3. Click Deploy > New deployment > gear icon > Web app. Set
+  //    "Execute as" to Me and "Who has access" to Anyone, then Deploy.
+  // 4. Copy the Web app URL it gives you (ends in /exec) into
+  //    ORDER_LOG_URL below.
+  // Leaving ORDER_LOG_URL blank keeps this a no-op.
+  var ORDER_LOG_URL = '';
 
   function submitOrderToSheet(orderNumber, itemsSummary, totalText) {
-    if (!GOOGLE_FORM_ACTION_URL) return;
+    if (!ORDER_LOG_URL) return;
     try {
       var formData = new FormData();
-      formData.append(GOOGLE_FORM_FIELDS.orderNumber, orderNumber);
-      formData.append(GOOGLE_FORM_FIELDS.items, itemsSummary);
-      formData.append(GOOGLE_FORM_FIELDS.total, totalText);
-      fetch(GOOGLE_FORM_ACTION_URL, { method: 'POST', mode: 'no-cors', body: formData }).catch(function () {});
+      formData.append('orderNumber', orderNumber);
+      formData.append('items', itemsSummary);
+      formData.append('total', totalText);
+      fetch(ORDER_LOG_URL, { method: 'POST', mode: 'no-cors', body: formData }).catch(function () {});
     } catch (e) {}
   }
 
