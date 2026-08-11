@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TODO: replace REPLACE_WITH_SITE_URL below with your real site URL once hosted
+     — same placeholder used in index.html's <head> and robots.txt. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>REPLACE_WITH_SITE_URL/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>

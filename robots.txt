@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: REPLACE_WITH_SITE_URL/sitemap.xml

@@ -562,6 +562,39 @@ img { max-width: 100%; display: block; }
   vertical-align: middle;
 }
 
+.open-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 14px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.open-status::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.open-status.is-open {
+  background: color-mix(in srgb, #2fb380 16%, transparent);
+  color: #1f7a53;
+}
+
+.open-status.is-open::before { background: #2fb380; }
+
+.open-status.is-closed {
+  background: color-mix(in srgb, #b3453d 12%, transparent);
+  color: #a13a33;
+}
+
+.open-status.is-closed::before { background: #b3453d; }
+
 .hours-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
 
 .hours-table th, .hours-table td {
