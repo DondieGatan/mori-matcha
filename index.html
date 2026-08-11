@@ -163,7 +163,7 @@
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.1-7-11a7 7 0 1 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
           View on Map
         </a>
-        <iframe class="map-embed" src="https://maps.google.com/maps?q=14.3649273,120.9313202&z=16&output=embed" title="Mori Matcha location map" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <iframe class="map-embed" src="https://maps.google.com/maps?q=14.3649273,120.9313202&z=16&output=embed" title="Mori Matcha location map" loading="lazy" referrerpolicy="no-referrer"></iframe>
       </div>
       <div class="visit-card">
         <p class="eyebrow">Hours <span class="tz-tag">Philippine Time (GMT+8)</span></p>
@@ -400,10 +400,11 @@
       }
 
       card.innerHTML =
-        '<div class="feedback-stars" aria-label="' + review.rating + ' out of 5 stars"></div>' +
+        '<div class="feedback-stars"></div>' +
         '<p class="feedback-text"></p>' +
         '<p class="feedback-meta"></p>';
 
+      card.querySelector('.feedback-stars').setAttribute('aria-label', review.rating + ' out of 5 stars');
       card.querySelector('.feedback-stars').textContent = stars;
       card.querySelector('.feedback-text').textContent = '“' + review.text + '”';
       card.querySelector('.feedback-meta').textContent = review.name + (review.drink ? ' · ' + review.drink : '');
