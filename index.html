@@ -802,6 +802,35 @@
     try { localStorage.removeItem(ORDER_NUMBER_KEY); } catch (e) {}
   }
 
+  // ---- Order log (Google Form -> Google Sheet) ----
+  // 1. Create a Google Form with 3 short-answer/paragraph questions, in this
+  //    order: Order Number, Items, Total. Turn on its linked Sheet under
+  //    Responses so submissions land in a spreadsheet automatically.
+  // 2. In the form editor, open the "..." menu > "Get pre-filled link", fill
+  //    each question with a dummy value, click "Get link", then open that
+  //    link and look at its query string: each question shows up as
+  //    entry.XXXXXXXXXX=... — copy those three entry IDs below.
+  // 3. Replace GOOGLE_FORM_ACTION_URL with the form's own URL, but change
+  //    "/viewform" at the end to "/formResponse".
+  // Leaving GOOGLE_FORM_ACTION_URL blank keeps this a no-op.
+  var GOOGLE_FORM_ACTION_URL = '';
+  var GOOGLE_FORM_FIELDS = {
+    orderNumber: 'entry.REPLACE_ME',
+    items: 'entry.REPLACE_ME',
+    total: 'entry.REPLACE_ME'
+  };
+
+  function submitOrderToSheet(orderNumber, itemsSummary, totalText) {
+    if (!GOOGLE_FORM_ACTION_URL) return;
+    try {
+      var formData = new FormData();
+      formData.append(GOOGLE_FORM_FIELDS.orderNumber, orderNumber);
+      formData.append(GOOGLE_FORM_FIELDS.items, itemsSummary);
+      formData.append(GOOGLE_FORM_FIELDS.total, totalText);
+      fetch(GOOGLE_FORM_ACTION_URL, { method: 'POST', mode: 'no-cors', body: formData }).catch(function () {});
+    } catch (e) {}
+  }
+
   var cartModal = document.getElementById('cart-modal');
   var cartItemsWrap = document.getElementById('cart-items');
   var cartEmptyEl = document.getElementById('cart-empty');
@@ -950,13 +979,17 @@
   cartOpenBtn.addEventListener('click', openCartModal);
   cartFab.addEventListener('click', openCartModal);
 
-  cartCopyBtn.addEventListener('click', function () {
-    if (cart.length === 0) return;
-    var lines = cart.map(function (item) {
+  function buildOrderLines() {
+    return cart.map(function (item) {
       var detail = item.level + ' sugar';
       if (item.milk && item.milk !== 'Regular Milk') detail += ', ' + item.milk;
       return item.qty + 'x ' + item.name + ' (' + detail + ') — ' + formatPeso(item.unitPrice * item.qty);
     });
+  }
+
+  cartCopyBtn.addEventListener('click', function () {
+    if (cart.length === 0) return;
+    var lines = buildOrderLines();
     lines.push('Total: ' + formatPeso(cartTotal()));
     var text = 'Hi Mori Matcha! I\'d like to order (Order #' + ensureOrderNumber() + '):\n\n' + lines.join('\n');
 
@@ -983,6 +1016,8 @@
     var sentOrderNumber = ensureOrderNumber();
     var original = cartSendBtn.textContent;
     cartSendBtn.textContent = 'Order ' + sentOrderNumber + ' Sent ✓';
+
+    submitOrderToSheet(sentOrderNumber, buildOrderLines().join('; '), formatPeso(cartTotal()));
 
     // Clear the underlying data right away (so it's safe even if the tab
     // closes), but hold off re-rendering to empty until after the
