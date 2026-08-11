@@ -101,17 +101,10 @@
       </div>
 
       <div class="menu-grid">
-        <div class="menu-tile reveal" data-drink="ube-matcha-coconut" tabindex="0" role="button" aria-haspopup="dialog">
-          <img src="assets/ube-matcha-coconut.jpg" alt="Ube Matcha Coconut, purple and green layered drink" loading="lazy">
+        <div class="menu-tile reveal" data-drink="ube-matcha-latte" tabindex="0" role="button" aria-haspopup="dialog">
+          <img src="assets/ube-matcha-coconut.jpg" alt="Ube Matcha Latte, purple and green layered drink" loading="lazy">
           <div class="menu-tile-overlay">
-            <h3>Ube Matcha Coconut</h3>
-            <span class="price">₱190</span>
-          </div>
-        </div>
-        <div class="menu-tile reveal" data-drink="matcha-ube" tabindex="0" role="button" aria-haspopup="dialog">
-          <img src="assets/matcha-ube.jpg" alt="Matcha Ube, layered purple and green with walnuts" loading="lazy">
-          <div class="menu-tile-overlay">
-            <h3>Matcha Ube</h3>
+            <h3>Ube Matcha Latte</h3>
             <span class="price">₱170</span>
           </div>
         </div>
@@ -131,7 +124,6 @@
         </div>
         <div class="menu-tile reveal" data-drink="matcha-sea-salt" tabindex="0" role="button" aria-haspopup="dialog">
           <img src="assets/matcha-sea-salt.jpg" alt="Matcha Sea Salt, layered matcha and cream drink" loading="lazy">
-          <span class="menu-badge menu-badge-new">New</span>
           <div class="menu-tile-overlay">
             <h3>Matcha Sea Salt</h3>
             <span class="price">₱180</span>
@@ -167,6 +159,10 @@
         <p class="eyebrow">Visit Us</p>
         <h3>Location</h3>
         <p>Anabu 2-F, Imus, Cavite</p>
+        <a href="https://www.google.com/maps/search/?api=1&query=Anabu+2-F%2C+Imus%2C+Cavite" target="_blank" rel="noopener" class="map-link">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.1-7-11a7 7 0 1 1 14 0c0 4.9-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          View on Map
+        </a>
       </div>
       <div class="visit-card">
         <p class="eyebrow">Hours <span class="tz-tag">Philippine Time (GMT+8)</span></p>
@@ -305,6 +301,11 @@
       <p class="sugar-modal-hint">Choose your sugar level</p>
       <div class="sugar-levels" role="group" aria-label="Sugar level"></div>
       <p class="sugar-amount-hint" id="sugar-amount-hint"></p>
+
+      <div class="milk-options" id="milk-options" hidden>
+        <p class="sugar-modal-hint">Milk Options</p>
+        <div class="milk-choices" id="milk-choices" role="group" aria-label="Milk option"></div>
+      </div>
 
       <div class="qty-row">
         <span class="qty-label">Quantity</span>
@@ -490,29 +491,34 @@
   });
 
   // Sugar level picker
-  // NOTE: matcha-ube amounts are a placeholder (copied from ube-matcha-coconut) —
-  // confirm the real recipe numbers and update below.
   var SUGAR_DATA = {
     'classic-matcha-latte': { unit: 'Vanilla Syrup', levels: { '25%': 10, '50%': 15, 'Regular': 25, 'Sweet': 35 } },
     'mango-matcha-bliss': { unit: 'Vanilla Syrup', levels: { '25%': 5, '50%': 10, 'Regular': 15, 'Sweet': 25 } },
-    'ube-matcha-coconut': { unit: 'Condensed Milk', levels: { '25%': 5, '50%': 10, 'Regular': 15, 'Sweet': 25 } },
+    'ube-matcha-latte': { unit: 'Condensed Milk', levels: { '25%': 5, '50%': 10, 'Regular': 15, 'Sweet': 25 } },
     'strawberry-matcha-latte': { unit: 'Vanilla Syrup', levels: { '25%': 10, '50%': 15, 'Regular': 20, 'Sweet': 30 } },
     'chocolate-cookies': { unit: 'Condensed Milk', levels: { '25%': 15, '50%': 20, 'Regular': 30, 'Sweet': 40 } },
-    'matcha-sea-salt': { unit: 'Caramel Syrup', levels: { '25%': 10, '50%': 15, 'Regular': 25, 'Sweet': 35 } },
-    'matcha-ube': { unit: 'Condensed Milk', levels: { '25%': 5, '50%': 10, 'Regular': 15, 'Sweet': 25 } }
+    'matcha-sea-salt': { unit: 'Caramel Syrup', levels: { '25%': 10, '50%': 15, 'Regular': 25, 'Sweet': 35 } }
   };
   var LEVEL_ORDER = ['25%', '50%', 'Regular', 'Sweet'];
+
+  var MILK_SURCHARGE = 20;
+  var MILK_OPTIONS = ['Regular Milk', 'Oat Milk', 'Coconut Milk'];
+  var MILK_ELIGIBLE_DRINKS = [
+    'classic-matcha-latte', 'ube-matcha-latte', 'strawberry-matcha-latte', 'matcha-sea-salt', 'mango-matcha-bliss'
+  ];
 
   var sugarModal = document.getElementById('sugar-modal');
   var sugarModalImg = sugarModal.querySelector('.sugar-modal-img');
   var sugarModalTitle = document.getElementById('sugar-modal-title');
   var sugarLevelsWrap = sugarModal.querySelector('.sugar-levels');
   var sugarAmountHint = document.getElementById('sugar-amount-hint');
+  var milkOptionsWrap = document.getElementById('milk-options');
+  var milkChoicesWrap = document.getElementById('milk-choices');
   var modalQtyEl = document.getElementById('modal-qty');
   var addToCartBtn = document.getElementById('add-to-cart-btn');
   var sugarLastFocused = null;
 
-  var activeDrink = null; // { key, name, price, level }
+  var activeDrink = null; // { key, name, price, level, milk }
   var activeQty = 1;
 
   function parsePrice(text) {
@@ -523,16 +529,21 @@
     return '₱' + n.toLocaleString('en-PH');
   }
 
+  function milkSurcharge(milk) {
+    return milk && milk !== 'Regular Milk' ? MILK_SURCHARGE : 0;
+  }
+
   function refreshAddToCartLabel() {
     if (!activeDrink) return;
-    addToCartBtn.textContent = 'Add to Cart — ' + formatPeso(activeDrink.price * activeQty);
+    var unitPrice = activeDrink.price + milkSurcharge(activeDrink.milk);
+    addToCartBtn.textContent = 'Add to Cart — ' + formatPeso(unitPrice * activeQty);
   }
 
   function openSugarModal(drinkKey, name, imgSrc, price) {
     var data = SUGAR_DATA[drinkKey];
     if (!data) return;
 
-    activeDrink = { key: drinkKey, name: name, price: price, level: 'Regular' };
+    activeDrink = { key: drinkKey, name: name, price: price, level: 'Regular', milk: 'Regular Milk' };
     activeQty = 1;
     modalQtyEl.textContent = activeQty;
 
@@ -558,6 +569,28 @@
     });
 
     sugarAmountHint.textContent = data.levels['Regular'] + ' ml ' + data.unit;
+
+    milkChoicesWrap.innerHTML = '';
+    if (MILK_ELIGIBLE_DRINKS.indexOf(drinkKey) !== -1) {
+      milkOptionsWrap.hidden = false;
+      MILK_OPTIONS.forEach(function (milk) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sugar-level-btn';
+        btn.textContent = milk === 'Regular Milk' ? milk : milk + ' +₱' + MILK_SURCHARGE;
+        if (milk === 'Regular Milk') btn.classList.add('is-active');
+        btn.addEventListener('click', function () {
+          milkChoicesWrap.querySelectorAll('.sugar-level-btn').forEach(function (b) { b.classList.remove('is-active'); });
+          btn.classList.add('is-active');
+          activeDrink.milk = milk;
+          refreshAddToCartLabel();
+        });
+        milkChoicesWrap.appendChild(btn);
+      });
+    } else {
+      milkOptionsWrap.hidden = true;
+    }
+
     refreshAddToCartLabel();
 
     sugarModal.hidden = false;
@@ -612,7 +645,8 @@
 
   addToCartBtn.addEventListener('click', function () {
     if (!activeDrink) return;
-    addToCart(activeDrink.key, activeDrink.name, activeDrink.level, activeDrink.price, activeQty);
+    var unitPrice = activeDrink.price + milkSurcharge(activeDrink.milk);
+    addToCart(activeDrink.key, activeDrink.name, activeDrink.level, activeDrink.milk, unitPrice, activeQty);
 
     var original = addToCartBtn.textContent;
     addToCartBtn.textContent = 'Added ✓';
@@ -651,12 +685,12 @@
     try { localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart)); } catch (e) {}
   }
 
-  function addToCart(drinkKey, name, level, unitPrice, qty) {
-    var existing = cart.find(function (i) { return i.drinkKey === drinkKey && i.level === level; });
+  function addToCart(drinkKey, name, level, milk, unitPrice, qty) {
+    var existing = cart.find(function (i) { return i.drinkKey === drinkKey && i.level === level && i.milk === milk; });
     if (existing) {
       existing.qty += qty;
     } else {
-      cart.push({ id: drinkKey + '|' + level + '|' + Date.now(), drinkKey: drinkKey, name: name, level: level, unitPrice: unitPrice, qty: qty });
+      cart.push({ id: drinkKey + '|' + level + '|' + milk + '|' + Date.now(), drinkKey: drinkKey, name: name, level: level, milk: milk, unitPrice: unitPrice, qty: qty });
     }
     saveCart();
     renderCart();
@@ -737,8 +771,11 @@
         '<span class="cart-item-price"></span>' +
         '<button type="button" class="cart-item-remove" aria-label="Remove item">&times;</button>';
 
+      var metaText = item.level + ' sugar';
+      if (item.milk && item.milk !== 'Regular Milk') metaText += ' · ' + item.milk;
+
       row.querySelector('.cart-item-info strong').textContent = item.name;
-      row.querySelector('.cart-item-meta').textContent = item.level + ' sugar';
+      row.querySelector('.cart-item-meta').textContent = metaText;
       row.querySelector('.qty-value').textContent = item.qty;
       row.querySelector('.cart-item-price').textContent = formatPeso(item.unitPrice * item.qty);
 
@@ -778,7 +815,9 @@
   cartCopyBtn.addEventListener('click', function () {
     if (cart.length === 0) return;
     var lines = cart.map(function (item) {
-      return item.qty + 'x ' + item.name + ' (' + item.level + ' sugar) — ' + formatPeso(item.unitPrice * item.qty);
+      var detail = item.level + ' sugar';
+      if (item.milk && item.milk !== 'Regular Milk') detail += ', ' + item.milk;
+      return item.qty + 'x ' + item.name + ' (' + detail + ') — ' + formatPeso(item.unitPrice * item.qty);
     });
     lines.push('Total: ' + formatPeso(cartTotal()));
     var text = 'Hi Mori Matcha! I\'d like to order:\n\n' + lines.join('\n');
