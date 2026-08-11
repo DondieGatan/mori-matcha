@@ -249,6 +249,13 @@
   </div>
 </div>
 
+<button type="button" class="cart-fab" id="cart-fab" hidden aria-label="View cart">
+  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 4h2l2.2 11.4a2 2 0 0 0 2 1.6h7.1a2 2 0 0 0 2-1.6L20 8H6"/><circle cx="10" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>
+  <span>View Cart</span>
+  <span class="cart-fab-badge" id="cart-fab-badge">0</span>
+  <span class="cart-fab-total" id="cart-fab-total">₱0</span>
+</button>
+
 <script>
   // Scroll-reveal: fade + rise each menu item into view, staggered
   var revealEls = document.querySelectorAll('.reveal');
@@ -482,6 +489,9 @@
   var cartCountEl = document.getElementById('cart-count');
   var cartOpenBtn = document.getElementById('cart-open-btn');
   var cartCopyBtn = document.getElementById('cart-copy-btn');
+  var cartFab = document.getElementById('cart-fab');
+  var cartFabBadge = document.getElementById('cart-fab-badge');
+  var cartFabTotal = document.getElementById('cart-fab-total');
   var cartLastFocused = null;
 
   function saveCart() {
@@ -527,9 +537,11 @@
   }
 
   function bumpCartIcon() {
-    cartOpenBtn.classList.remove('bump');
-    void cartOpenBtn.offsetWidth;
-    cartOpenBtn.classList.add('bump');
+    [cartOpenBtn, cartFab].forEach(function (el) {
+      el.classList.remove('bump');
+      void el.offsetWidth;
+      el.classList.add('bump');
+    });
   }
 
   function renderCart() {
@@ -537,8 +549,12 @@
     if (count > 0) {
       cartCountEl.hidden = false;
       cartCountEl.textContent = count;
+      cartFab.hidden = false;
+      cartFabBadge.textContent = count;
+      cartFabTotal.textContent = formatPeso(cartTotal());
     } else {
       cartCountEl.hidden = true;
+      cartFab.hidden = true;
     }
 
     cartItemsWrap.innerHTML = '';
@@ -604,6 +620,7 @@
   });
 
   cartOpenBtn.addEventListener('click', openCartModal);
+  cartFab.addEventListener('click', openCartModal);
 
   cartCopyBtn.addEventListener('click', function () {
     if (cart.length === 0) return;
