@@ -337,7 +337,7 @@
         <span id="cart-total">₱0</span>
       </div>
       <button type="button" class="btn btn-ghost" id="cart-copy-btn">Copy Order for Instagram</button>
-      <a href="https://ig.me/m/mori_matchaofficial" target="_blank" rel="noopener" class="btn btn-primary">Send Order via Instagram</a>
+      <a href="https://ig.me/m/mori_matchaofficial" target="_blank" rel="noopener" class="btn btn-primary" id="cart-send-btn">Send Order via Instagram</a>
       <p class="cart-payment-note">We'll reply with GCash / bank transfer details once we confirm your order.</p>
     </div>
   </div>
@@ -677,6 +677,7 @@
   var cartCountEl = document.getElementById('cart-count');
   var cartOpenBtn = document.getElementById('cart-open-btn');
   var cartCopyBtn = document.getElementById('cart-copy-btn');
+  var cartSendBtn = document.getElementById('cart-send-btn');
   var cartFab = document.getElementById('cart-fab');
   var cartFabBadge = document.getElementById('cart-fab-badge');
   var cartFabTotal = document.getElementById('cart-fab-total');
@@ -836,6 +837,27 @@
     } else {
       window.prompt('Copy your order:', text);
     }
+  });
+
+  // Once the order is sent, clear the cart so a later visit doesn't
+  // accidentally re-send (or add to) an order that's already been placed.
+  cartSendBtn.addEventListener('click', function () {
+    if (cart.length === 0) return;
+
+    var original = cartSendBtn.textContent;
+    cartSendBtn.textContent = 'Order Sent — Cart Cleared ✓';
+
+    // Clear the underlying data right away (so it's safe even if the tab
+    // closes), but hold off re-rendering to empty until after the
+    // confirmation message has had a moment to actually be seen.
+    cart = [];
+    saveCart();
+
+    setTimeout(function () {
+      cartSendBtn.textContent = original;
+      renderCart();
+      closeCartModal();
+    }, 1400);
   });
 
   renderCart();
