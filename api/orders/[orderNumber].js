@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless'
+import { isAuthorized } from '../_lib/auth.js'
 
 const sql = neon(process.env.DATABASE_URL, { fullResults: true })
 
@@ -10,7 +11,7 @@ export default async function handler(req, res) {
     return res.status(405).end('Method Not Allowed')
   }
 
-  if (req.headers['x-admin-key'] !== process.env.ADMIN_KEY) {
+  if (!isAuthorized(req)) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
