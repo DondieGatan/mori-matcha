@@ -56,7 +56,7 @@ export const MENU_DRINKS = [
     name: 'Matcha Sea Salt',
     img: '/assets/matcha-sea-salt.jpg',
     imgAlt: 'Matcha Sea Salt, layered matcha and cream drink',
-    price: 180,
+    price: 160,
   },
   {
     key: 'mango-matcha-bliss',
