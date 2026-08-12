@@ -25,7 +25,7 @@ export const FEATURED_DRINK = {
   description: 'Our house standard — stone-ground matcha whisked with steamed milk.',
   img: '/assets/classic-matcha-latte.jpg',
   imgAlt: 'Classic Matcha Latte, matcha powder sifting over a glass',
-  price: 150,
+  price: 160,
   badge: 'Best Seller',
 }
 
@@ -56,7 +56,7 @@ export const MENU_DRINKS = [
     name: 'Matcha Sea Salt',
     img: '/assets/matcha-sea-salt.jpg',
     imgAlt: 'Matcha Sea Salt, layered matcha and cream drink',
-    price: 160,
+    price: 170,
   },
   {
     key: 'mango-matcha-bliss',
