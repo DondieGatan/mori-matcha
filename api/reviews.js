@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GOOGLE_PLACES_API_KEY
   if (!apiKey) {
-    return res.status(200).json({ reviews: [] })
+    return res.status(200).json({ reviews: [], _debug: 'no key' })
   }
 
   try {
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     })
 
     if (!upstream.ok) {
-      return res.status(200).json({ reviews: [] })
+      return res.status(200).json({ reviews: [], _debug: 'upstream ' + upstream.status })
     }
 
     const data = await upstream.json()
