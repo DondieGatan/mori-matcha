@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { INSTAGRAM_DM_URL, REVIEWS } from '../data/menu'
 import { useReveal } from '../hooks/useReveal'
 
@@ -23,6 +24,26 @@ function FeedbackCard({ review, index }) {
 export default function FeedbackSection() {
   const emptyReveal = useReveal(0)
   const ctaReveal = useReveal(1)
+  // Static REVIEWS is the fallback while Google hasn't indexed a review yet
+  // (there's a real delay between a review posting and it appearing via the
+  // API). Once Google returns reviews, they take priority to avoid showing
+  // the same review twice.
+  const [reviews, setReviews] = useState(REVIEWS)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/reviews')
+      .then((res) => (res.ok ? res.json() : { reviews: [] }))
+      .then((data) => {
+        if (!cancelled && data.reviews && data.reviews.length > 0) {
+          setReviews(data.reviews)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <section id="feedback" className="section">
@@ -31,11 +52,11 @@ export default function FeedbackSection() {
         <h2 className="section-title center">Customer Feedback</h2>
 
         <div className="feedback-grid">
-          {REVIEWS.map((review, i) => (
+          {reviews.map((review, i) => (
             <FeedbackCard review={review} index={i} key={i} />
           ))}
         </div>
-        {REVIEWS.length === 0 && (
+        {reviews.length === 0 && (
           <p ref={emptyReveal.ref} style={emptyReveal.style} className={emptyReveal.className + ' feedback-empty'}>
             No reviews yet — be the first to share your experience!
           </p>
