@@ -6,8 +6,8 @@ const sql = neon(process.env.DATABASE_URL, { fullResults: true })
 const ALLOWED_STATUSES = ['pending', 'paid', 'shipped']
 
 export default async function handler(req, res) {
-  if (req.method !== 'PATCH') {
-    res.setHeader('Allow', ['PATCH'])
+  if (req.method !== 'PATCH' && req.method !== 'DELETE') {
+    res.setHeader('Allow', ['PATCH', 'DELETE'])
     return res.status(405).end('Method Not Allowed')
   }
 
@@ -16,6 +16,13 @@ export default async function handler(req, res) {
   }
 
   const { orderNumber } = req.query
+
+  if (req.method === 'DELETE') {
+    const { rowCount } = await sql`DELETE FROM orders WHERE order_number = ${orderNumber}`
+    if (rowCount === 0) return res.status(404).json({ error: 'Order not found' })
+    return res.status(200).json({ ok: true })
+  }
+
   const { status } = req.body || {}
   if (!ALLOWED_STATUSES.includes(status)) {
     return res.status(400).json({ error: 'Invalid status' })

@@ -89,6 +89,22 @@ export default function AdminPage() {
     }
   }
 
+  async function handleDelete(orderNumber) {
+    if (!window.confirm('Delete order ' + orderNumber + '? This cannot be undone.')) return
+    const previous = orders
+    setOrders((prev) => prev.filter((o) => o.order_number !== orderNumber))
+    try {
+      const res = await fetch('/api/orders/' + encodeURIComponent(orderNumber), {
+        method: 'DELETE',
+        headers: { 'X-Admin-Key': adminKey },
+      })
+      if (!res.ok) throw new Error('failed')
+    } catch (e) {
+      setOrders(previous)
+      setError('Failed to delete ' + orderNumber + ' — try again.')
+    }
+  }
+
   if (!adminKey) {
     return (
       <div className="admin-page">
@@ -131,6 +147,7 @@ export default function AdminPage() {
                 <th>Items</th>
                 <th>Total</th>
                 <th>Status</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -152,6 +169,16 @@ export default function AdminPage() {
                         </option>
                       ))}
                     </select>
+                  </td>
+                  <td>
+                    <button
+                      type="button"
+                      className="admin-delete-btn"
+                      aria-label={'Delete order ' + order.order_number}
+                      onClick={() => handleDelete(order.order_number)}
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
