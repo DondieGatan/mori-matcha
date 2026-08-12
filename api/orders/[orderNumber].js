@@ -4,6 +4,7 @@ import { isAuthorized } from '../_lib/auth.js'
 const sql = neon(process.env.DATABASE_URL, { fullResults: true })
 
 const ALLOWED_STATUSES = ['pending', 'paid', 'shipped']
+const ALLOWED_PAYMENT_METHODS = ['GCash', 'BDO', 'Maya', 'Cash']
 
 export default async function handler(req, res) {
   if (req.method !== 'PATCH' && req.method !== 'DELETE') {
@@ -23,13 +24,23 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true })
   }
 
-  const { status } = req.body || {}
-  if (!ALLOWED_STATUSES.includes(status)) {
+  const { status, paymentMethod } = req.body || {}
+
+  if (status === undefined && paymentMethod === undefined) {
+    return res.status(400).json({ error: 'Provide status and/or paymentMethod' })
+  }
+  if (status !== undefined && !ALLOWED_STATUSES.includes(status)) {
     return res.status(400).json({ error: 'Invalid status' })
+  }
+  if (paymentMethod !== undefined && paymentMethod !== null && !ALLOWED_PAYMENT_METHODS.includes(paymentMethod)) {
+    return res.status(400).json({ error: 'Invalid paymentMethod' })
   }
 
   const { rowCount } = await sql`
-    UPDATE orders SET status = ${status}, updated_at = now()
+    UPDATE orders SET
+      status = COALESCE(${status ?? null}, status),
+      payment_method = CASE WHEN ${paymentMethod !== undefined} THEN ${paymentMethod ?? null} ELSE payment_method END,
+      updated_at = now()
     WHERE order_number = ${orderNumber}
   `
 

@@ -15,6 +15,8 @@ async function ensureTable() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `
+  // Migration for tables created before payment_method existed.
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT`
 }
 
 export default async function handler(req, res) {

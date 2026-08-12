@@ -3,6 +3,7 @@ import { formatPeso } from '../data/menu'
 
 const ADMIN_KEY_STORAGE = 'mori-matcha-admin-key'
 const STATUSES = ['pending', 'paid', 'shipped']
+const PAYMENT_METHODS = ['GCash', 'BDO', 'Maya', 'Cash']
 
 function formatTimestamp(iso) {
   return new Intl.DateTimeFormat('en-PH', {
@@ -89,6 +90,20 @@ export default function AdminPage() {
     }
   }
 
+  async function handlePaymentMethodChange(orderNumber, paymentMethod) {
+    setOrders((prev) => prev.map((o) => (o.order_number === orderNumber ? { ...o, payment_method: paymentMethod } : o)))
+    try {
+      const res = await fetch('/api/orders/' + encodeURIComponent(orderNumber), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
+        body: JSON.stringify({ paymentMethod: paymentMethod || null }),
+      })
+      if (!res.ok) throw new Error('failed')
+    } catch (e) {
+      setError('Failed to update payment method for ' + orderNumber + ' — refresh and try again.')
+    }
+  }
+
   async function handleDelete(orderNumber) {
     if (!window.confirm('Delete order ' + orderNumber + '? This cannot be undone.')) return
     const previous = orders
@@ -147,6 +162,7 @@ export default function AdminPage() {
                 <th>Items</th>
                 <th>Total</th>
                 <th>Status</th>
+                <th>Payment</th>
                 <th></th>
               </tr>
             </thead>
@@ -166,6 +182,20 @@ export default function AdminPage() {
                       {STATUSES.map((s) => (
                         <option key={s} value={s}>
                           {s}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <select
+                      className="admin-status-select"
+                      value={order.payment_method || ''}
+                      onChange={(e) => handlePaymentMethodChange(order.order_number, e.target.value)}
+                    >
+                      <option value="">—</option>
+                      {PAYMENT_METHODS.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
                         </option>
                       ))}
                     </select>
