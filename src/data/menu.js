@@ -1,10 +1,10 @@
 export const SUGAR_DATA = {
-  'classic-matcha-latte': { unit: 'Vanilla Syrup', levels: { '25%': 10, '50%': 15, Regular: 25, Sweet: 35 } },
-  'mango-matcha-bliss': { unit: 'Vanilla Syrup', levels: { '25%': 5, '50%': 10, Regular: 15, Sweet: 25 } },
+  'classic-matcha-latte': { unit: 'Syrup', levels: { '25%': 5, '50%': 8, Regular: 12, Sweet: 20 } },
+  'mango-matcha-bliss': { unit: 'Syrup', levels: { '25%': 5, '50%': 8, Regular: 12, Sweet: 20 } },
   'ube-matcha-latte': { unit: 'Condensed Milk', levels: { '25%': 5, '50%': 10, Regular: 15, Sweet: 25 } },
-  'strawberry-matcha-latte': { unit: 'Vanilla Syrup', levels: { '25%': 10, '50%': 15, Regular: 20, Sweet: 30 } },
-  'chocolate-cookies': { unit: 'Condensed Milk', levels: { '25%': 15, '50%': 20, Regular: 30, Sweet: 40 } },
-  'matcha-sea-salt': { unit: 'Caramel Syrup', levels: { '25%': 10, '50%': 15, Regular: 25, Sweet: 35 } },
+  'strawberry-matcha-latte': { unit: 'Syrup', levels: { '25%': 5, '50%': 8, Regular: 12, Sweet: 20 } },
+  'chocolate-cookies': { unit: 'Syrup', levels: { '25%': 10, '50%': 15, Regular: 20, Sweet: 25 } },
+  'matcha-sea-salt': { unit: 'Syrup', levels: { '25%': 5, '50%': 8, Regular: 12, Sweet: 20 } },
 }
 
 export const LEVEL_ORDER = ['25%', '50%', 'Regular', 'Sweet']
