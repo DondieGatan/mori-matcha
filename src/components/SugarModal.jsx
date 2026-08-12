@@ -82,7 +82,10 @@ export default function SugarModal({ drink, onClose, onAddToCart }) {
           &times;
         </button>
         <div className="sugar-modal-scroll">
-          <img className="sugar-modal-img" src={displayDrink.img} alt={displayDrink.name} />
+          <div className="sugar-modal-img-wrap">
+            <img className="sugar-modal-img-bg" src={displayDrink.img} alt="" aria-hidden="true" />
+            <img className="sugar-modal-img" src={displayDrink.img} alt={displayDrink.name} />
+          </div>
           <div className="sugar-modal-body">
             <h3 id="sugar-modal-title">{displayDrink.name}</h3>
             <p className="sugar-modal-hint">Choose your sugar level</p>
