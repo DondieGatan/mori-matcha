@@ -101,6 +101,7 @@ export const INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/mori_matchaoffic
 export const FACEBOOK_URL = 'https://www.facebook.com/profile.php?id=61591820885889'
 export const TIKTOK_URL = 'https://www.tiktok.com/@morimatchaofficial?is_from_webapp=1&sender_device=pc'
 export const MAP_LINK_URL = 'https://maps.app.goo.gl/4CpyC94XoyicCAAR6'
+export const GOOGLE_REVIEW_URL = 'https://search.google.com/local/writereview?placeid=ChIJLz3Ww9_VlzMR9J4R_cPuKnw'
 export const MAP_EMBED_URL = 'https://maps.google.com/maps?q=14.3649273,120.9313202&z=16&output=embed'
 
 export function formatPeso(n) {

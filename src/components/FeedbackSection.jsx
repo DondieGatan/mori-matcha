@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { INSTAGRAM_DM_URL, REVIEWS } from '../data/menu'
+import { GOOGLE_REVIEW_URL, REVIEWS } from '../data/menu'
 import { useReveal } from '../hooks/useReveal'
 
 function FeedbackCard({ review, index }) {
@@ -64,8 +64,8 @@ export default function FeedbackSection() {
 
         <div ref={ctaReveal.ref} style={ctaReveal.style} className={ctaReveal.className + ' feedback-cta'}>
           <p>Loved your matcha? We'd love to hear about it.</p>
-          <a href={INSTAGRAM_DM_URL} target="_blank" rel="noopener" className="btn btn-ghost">
-            Leave Feedback via Instagram
+          <a href={GOOGLE_REVIEW_URL} target="_blank" rel="noopener" className="btn btn-ghost">
+            Leave a Review on Google
           </a>
         </div>
       </div>
