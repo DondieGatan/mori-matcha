@@ -1,8 +1,4 @@
-import { useState } from 'react'
-
 export default function Hero() {
-  const [logoFailed, setLogoFailed] = useState(false)
-
   return (
     <section id="top" className="hero">
       <div className="hero-glass">
@@ -14,15 +10,11 @@ export default function Hero() {
 
       <div className="hero-content">
         <p className="eyebrow">Freshly Whisked · Made to Order</p>
-        {!logoFailed ? (
-          <img src="/assets/logo.png" alt="Mori Matcha" className="hero-logo" onError={() => setLogoFailed(true)} />
-        ) : (
-          <h1>
-            MORI
-            <br />
-            <span>Matcha</span>
-          </h1>
-        )}
+        <h1>
+          MORI
+          <br />
+          <span>Matcha</span>
+        </h1>
         <p className="hero-sub">
           Ceremonial-grade matcha, whisked to order and built the way you like it — classic, creamy, or fruit-forward.
         </p>
