@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: REPLACE_WITH_SITE_URL/sitemap.xml
+Sitemap: https://mori-matcha-inky.vercel.app/sitemap.xml
