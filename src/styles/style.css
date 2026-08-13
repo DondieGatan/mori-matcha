@@ -376,6 +376,23 @@ img { max-width: 100%; display: block; }
 }
 
 .menu-badge-new { background: #b3453d; }
+.menu-badge-sold-out { background: var(--text-dim); }
+
+.featured-item.is-sold-out,
+.menu-tile.is-sold-out {
+  cursor: not-allowed;
+}
+
+.featured-item.is-sold-out .featured-img,
+.menu-tile.is-sold-out img {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+.menu-tile.is-sold-out .menu-tile-overlay .price {
+  color: var(--cream-soft);
+  opacity: 0.85;
+}
 
 .featured-text { flex: 1; }
 .featured-text h3 { font-size: 1.5rem; margin-bottom: 6px; }
@@ -1317,6 +1334,11 @@ img { max-width: 100%; display: block; }
   margin-bottom: 20px;
 }
 
+.admin-header-actions {
+  display: flex;
+  gap: 10px;
+}
+
 .admin-error {
   color: #a33;
   margin: 10px 0;
@@ -1374,3 +1396,32 @@ img { max-width: 100%; display: block; }
 }
 
 .admin-delete-btn:hover { background: #a33; color: var(--cream-soft); }
+
+.admin-availability {
+  margin-bottom: 32px;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--cream-soft);
+}
+
+.admin-availability h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.2rem;
+  color: var(--forest);
+  margin: 0 0 12px;
+}
+
+.admin-availability-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 24px;
+}
+
+.admin-availability-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}

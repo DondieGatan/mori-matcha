@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { formatPeso } from '../data/menu'
+import { FEATURED_DRINK, MENU_DRINKS, formatPeso } from '../data/menu'
 
 const ADMIN_KEY_STORAGE = 'mori-matcha-admin-key'
 const STATUSES = ['pending', 'paid', 'shipped']
 const PAYMENT_METHODS = ['GCash', 'BDO', 'Maya', 'Cash']
+const ALL_DRINKS = [FEATURED_DRINK, ...MENU_DRINKS]
 
 function formatTimestamp(iso) {
   return new Intl.DateTimeFormat('en-PH', {
@@ -23,6 +24,33 @@ function formatItems(items) {
     .join('; ')
 }
 
+function csvCell(value) {
+  const s = String(value ?? '')
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
+}
+
+function downloadOrdersCsv(orders) {
+  const header = ['Timestamp', 'Order Number', 'Items', 'Total', 'Status', 'Payment Method']
+  const rows = orders.map((o) => [
+    formatTimestamp(o.created_at),
+    o.order_number,
+    formatItems(o.items),
+    Number(o.total),
+    o.status,
+    o.payment_method || '',
+  ])
+  const csv = [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'mori-matcha-orders-' + new Date().toISOString().slice(0, 10) + '.csv'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState(() => {
     try {
@@ -35,6 +63,7 @@ export default function AdminPage() {
   const [orders, setOrders] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [soldOutKeys, setSoldOutKeys] = useState([])
 
   const loadOrders = useCallback(async (key) => {
     setLoading(true)
@@ -63,9 +92,35 @@ export default function AdminPage() {
     }
   }, [])
 
+  const loadAvailability = useCallback(async () => {
+    try {
+      const res = await fetch('/api/availability')
+      if (!res.ok) return
+      const data = await res.json()
+      setSoldOutKeys(data.soldOut || [])
+    } catch (e) {}
+  }, [])
+
   useEffect(() => {
-    if (adminKey) loadOrders(adminKey)
-  }, [adminKey, loadOrders])
+    if (adminKey) {
+      loadOrders(adminKey)
+      loadAvailability()
+    }
+  }, [adminKey, loadOrders, loadAvailability])
+
+  async function handleAvailabilityToggle(drinkKey, available) {
+    setSoldOutKeys((prev) => (available ? prev.filter((k) => k !== drinkKey) : [...prev, drinkKey]))
+    try {
+      const res = await fetch('/api/availability', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
+        body: JSON.stringify({ drinkKey, available }),
+      })
+      if (!res.ok) throw new Error('failed')
+    } catch (e) {
+      setError('Failed to update availability for ' + drinkKey + ' — refresh and try again.')
+    }
+  }
 
   function handleKeySubmit(e) {
     e.preventDefault()
@@ -144,11 +199,40 @@ export default function AdminPage() {
 
   return (
     <div className="admin-page">
+      <div className="admin-availability">
+        <h2>Menu Availability</h2>
+        <div className="admin-availability-list">
+          {ALL_DRINKS.map((drink) => {
+            const available = !soldOutKeys.includes(drink.key)
+            return (
+              <label key={drink.key} className="admin-availability-item">
+                <input
+                  type="checkbox"
+                  checked={available}
+                  onChange={(e) => handleAvailabilityToggle(drink.key, e.target.checked)}
+                />
+                {drink.name}
+              </label>
+            )
+          })}
+        </div>
+      </div>
+
       <div className="admin-header">
         <h1>Mori Matcha — Orders</h1>
-        <button type="button" className="btn btn-ghost" onClick={() => loadOrders(adminKey)} disabled={loading}>
-          {loading ? 'Refreshing…' : 'Refresh'}
-        </button>
+        <div className="admin-header-actions">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => downloadOrdersCsv(orders || [])}
+            disabled={!orders || orders.length === 0}
+          >
+            Download CSV
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={() => loadOrders(adminKey)} disabled={loading}>
+            {loading ? 'Refreshing…' : 'Refresh'}
+          </button>
+        </div>
       </div>
       {error && <p className="admin-error">{error}</p>}
       {orders && orders.length === 0 && <p>No orders yet.</p>}

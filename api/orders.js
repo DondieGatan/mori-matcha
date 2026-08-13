@@ -28,6 +28,15 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'orderNumber, items (array), and total (number) are required' })
     }
 
+    // Simple flood guard: a real café won't see this many orders land in one
+    // minute, so a burst past it is almost certainly abuse, not customers.
+    const { rows: recent } = await sql`
+      SELECT COUNT(*)::int AS count FROM orders WHERE created_at > now() - interval '1 minute'
+    `
+    if (recent[0].count >= 20) {
+      return res.status(429).json({ error: 'Too many orders right now, please try again shortly' })
+    }
+
     try {
       await sql`
         INSERT INTO orders (order_number, items, total)

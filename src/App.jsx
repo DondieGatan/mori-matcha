@@ -14,9 +14,11 @@ import CartModal from './components/CartModal'
 import CartFab from './components/CartFab'
 import BackToTop from './components/BackToTop'
 import { useCart } from './hooks/useCart'
+import { useAvailability } from './hooks/useAvailability'
 
 export default function App() {
   const cart = useCart()
+  const soldOutKeys = useAvailability()
   const [sugarModalDrink, setSugarModalDrink] = useState(null)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [bumpKey, setBumpKey] = useState(0)
@@ -32,7 +34,7 @@ export default function App() {
       <main>
         <Hero />
         <RitualStrip />
-        <MenuSection onOpenSugarModal={setSugarModalDrink} />
+        <MenuSection onOpenSugarModal={setSugarModalDrink} soldOutKeys={soldOutKeys} />
         <AboutSection />
         <VisitSection />
         <FaqSection />
