@@ -70,7 +70,16 @@ export const MENU_DRINKS = [
 // Add real reviews here as customers send them (e.g. via Instagram DM).
 // Each entry: { name, rating (1-5), text, drink (optional) }
 export const REVIEWS = [
-  // { name: 'Jane D.', rating: 5, text: 'Best matcha in Imus! The sea salt one is unreal.', drink: 'Matcha Sea Salt' },
+  {
+    name: 'Mary Jade De Leon',
+    rating: 5,
+    text: 'Really enjoyed the matcha here! Creamy, refreshing, and definitely worth trying!',
+  },
+  {
+    name: 'Godwin',
+    rating: 5,
+    text: 'Absolutely loved my experience at Mori Matcha Home Cafe! The matcha was smooth, rich, and had a really nice authentic flavor without being overly bitter. You can really tell that care goes into every cup. Definitely a great grab for matcha lovers, and I’ll be coming back again! Highly recommended.',
+  },
 ]
 
 export const OPEN_HOURS = {
