@@ -80,6 +80,11 @@ export const REVIEWS = [
     rating: 5,
     text: 'Absolutely loved my experience at Mori Matcha Home Cafe! The matcha was smooth, rich, and had a really nice authentic flavor without being overly bitter. You can really tell that care goes into every cup. Definitely a great grab for matcha lovers, and I’ll be coming back again! Highly recommended.',
   },
+  {
+    name: 'Danielle Gatan',
+    rating: 5,
+    text: 'Tried Mori Matcha and really enjoyed it! The matcha was smooth, creamy, refreshing and had a nice earthy flavor without being too bitter or sweet. Such a refreshing drink and definitely one I’d get again!',
+  },
 ]
 
 export const OPEN_HOURS = {
