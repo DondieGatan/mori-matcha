@@ -24,10 +24,11 @@ function FeedbackCard({ review, index }) {
 export default function FeedbackSection() {
   const emptyReveal = useReveal(0)
   const ctaReveal = useReveal(1)
-  // Static REVIEWS is the fallback while Google hasn't indexed a review yet
-  // (there's a real delay between a review posting and it appearing via the
-  // API). Once Google returns reviews, they take priority to avoid showing
-  // the same review twice.
+  // Static REVIEWS are known-real reviews Google hasn't surfaced via the API
+  // yet (there's a real delay, and Google only returns a small algorithm-
+  // selected subset). Live API reviews are shown first; any static review
+  // whose name isn't already present live fills in behind it, so nothing
+  // shows twice once Google catches up.
   const [reviews, setReviews] = useState(REVIEWS)
 
   useEffect(() => {
@@ -35,9 +36,11 @@ export default function FeedbackSection() {
     fetch('/api/reviews')
       .then((res) => (res.ok ? res.json() : { reviews: [] }))
       .then((data) => {
-        if (!cancelled && data.reviews && data.reviews.length > 0) {
-          setReviews(data.reviews)
-        }
+        if (cancelled) return
+        const live = data.reviews || []
+        const liveNames = new Set(live.map((r) => r.name.toLowerCase()))
+        const staticOnly = REVIEWS.filter((r) => !liveNames.has(r.name.toLowerCase()))
+        setReviews([...live, ...staticOnly])
       })
       .catch(() => {})
     return () => {
