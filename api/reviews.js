@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GOOGLE_PLACES_API_KEY
   if (!apiKey) {
-    return res.status(200).json({ reviews: [], _debug: 'no GOOGLE_PLACES_API_KEY in this environment' })
+    return res.status(200).json({ reviews: [] })
   }
 
   try {
@@ -22,8 +22,7 @@ export default async function handler(req, res) {
     })
 
     if (!upstream.ok) {
-      const errorBody = await upstream.text().catch(() => '')
-      return res.status(200).json({ reviews: [], _debug: { status: upstream.status, body: errorBody } })
+      return res.status(200).json({ reviews: [] })
     }
 
     const data = await upstream.json()
@@ -35,8 +34,8 @@ export default async function handler(req, res) {
     }))
 
     res.setHeader('Cache-Control', 'public, max-age=3600')
-    return res.status(200).json({ reviews, _debug: { rawReviewCount: (data.reviews || []).length, keys: Object.keys(data) } })
+    return res.status(200).json({ reviews })
   } catch (e) {
-    return res.status(200).json({ reviews: [], _debug: { error: String(e) } })
+    return res.status(200).json({ reviews: [] })
   }
 }
