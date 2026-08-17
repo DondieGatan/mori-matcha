@@ -88,26 +88,23 @@ export const REVIEWS = [
 ]
 
 export const OPEN_HOURS = {
-  0: [[9 * 60, 23 * 60]], // Sunday 9:00 AM – 11:00 PM
-  1: [
-    [10 * 60, 14 * 60],
-    [18 * 60, 22 * 60],
-  ], // Monday 10:00 AM – 2:00 PM & 6:00 PM – 10:00 PM
-  2: [[15 * 60, 22 * 60]], // Tuesday 3:00 PM – 10:00 PM
-  3: [[14 * 60, 22 * 60]], // Wednesday 2:00 PM – 10:00 PM
-  4: [[18 * 60, 22 * 60]], // Thursday 6:00 PM – 10:00 PM
-  5: [[17 * 60 + 30, 22 * 60]], // Friday 5:30 PM – 10:00 PM
-  6: [[13 * 60, 23 * 60]], // Saturday 1:00 PM – 11:00 PM
+  0: [[9 * 60, 22 * 60 + 30]], // Sunday 9:00 AM – 10:30 PM
+  1: [[17 * 60, 22 * 60 + 30]], // Monday 5:00 PM – 10:30 PM
+  2: [[13 * 60 + 30, 22 * 60 + 30]], // Tuesday 1:30 PM – 10:30 PM
+  3: [[13 * 60 + 30, 22 * 60 + 30]], // Wednesday 1:30 PM – 10:30 PM
+  4: [[17 * 60, 22 * 60 + 30]], // Thursday 5:00 PM – 10:30 PM
+  5: [[17 * 60 + 30, 22 * 60 + 30]], // Friday 5:30 PM – 10:30 PM
+  6: [[12 * 60 + 30, 22 * 60 + 30]], // Saturday 12:30 PM – 10:30 PM
 }
 
 export const HOURS_TABLE = [
-  { day: 'Monday', text: '10:00 AM – 2:00 PM & 6:00 PM – 10:00 PM' },
-  { day: 'Tuesday', text: '3:00 PM – 10:00 PM' },
-  { day: 'Wednesday', text: '2:00 PM – 10:00 PM' },
-  { day: 'Thursday', text: '6:00 PM – 10:00 PM' },
-  { day: 'Friday', text: '5:30 PM – 10:00 PM' },
-  { day: 'Saturday', text: '1:00 PM – 11:00 PM' },
-  { day: 'Sunday', text: '9:00 AM – 11:00 PM' },
+  { day: 'Monday', text: '5:00 PM – 10:30 PM' },
+  { day: 'Tuesday', text: '1:30 PM – 10:30 PM' },
+  { day: 'Wednesday', text: '1:30 PM – 10:30 PM' },
+  { day: 'Thursday', text: '5:00 PM – 10:30 PM' },
+  { day: 'Friday', text: '5:30 PM – 10:30 PM' },
+  { day: 'Saturday', text: '12:30 PM – 10:30 PM' },
+  { day: 'Sunday', text: '9:00 AM – 10:30 PM' },
 ]
 
 export const INSTAGRAM_DM_URL = 'https://ig.me/m/mori_matchaofficial'
