@@ -24,7 +24,7 @@ const FAQ_ITEMS = [
     question: 'Where are you located, and what are your hours?',
     answer: (
       <>
-        We're at Anabu 2-F, Imus, Cavite. Hours vary by day — see the full schedule in <a href="#visit">Visit Us</a>.
+        We're at Golden City Subdivision, Anabu 2-F, Imus, Cavite. Hours vary by day — see the full schedule in <a href="#visit">Visit Us</a>.
       </>
     ),
   },

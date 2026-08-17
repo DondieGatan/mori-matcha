@@ -17,7 +17,7 @@ export default function VisitSection() {
         >
           <p className="eyebrow">Visit Us</p>
           <h3>Location</h3>
-          <p>Anabu 2-F, Imus, Cavite</p>
+          <p>Golden City Subdivision, Anabu 2-F, Imus, Cavite</p>
           <a href={MAP_LINK_URL} target="_blank" rel="noopener" className="map-link">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 21s-7-6.1-7-11a7 7 0 1 1 14 0c0 4.9-7 11-7 11z" />
