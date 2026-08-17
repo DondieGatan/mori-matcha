@@ -111,9 +111,9 @@ export const INSTAGRAM_DM_URL = 'https://ig.me/m/mori_matchaofficial'
 export const INSTAGRAM_PROFILE_URL = 'https://www.instagram.com/mori_matchaofficial/'
 export const FACEBOOK_URL = 'https://www.facebook.com/profile.php?id=61591820885889'
 export const TIKTOK_URL = 'https://www.tiktok.com/@morimatchaofficial?is_from_webapp=1&sender_device=pc'
-export const MAP_LINK_URL = 'https://maps.app.goo.gl/4CpyC94XoyicCAAR6'
+export const MAP_LINK_URL = 'https://www.google.com/maps/place/Golden+City+Subdivision/@14.3610438,120.9320483,858m/data=!3m2!1e3!4b1!4m6!3m5!1s0x3397d48501c7bca5:0x7793fb7f06b073ff!8m2!3d14.3610438!4d120.9320483!16s%2Fg%2F1tlzxq3j'
 export const GOOGLE_REVIEW_URL = 'https://search.google.com/local/writereview?placeid=ChIJLz3Ww9_VlzMR9J4R_cPuKnw'
-export const MAP_EMBED_URL = 'https://maps.google.com/maps?q=14.3649273,120.9313202&z=16&output=embed'
+export const MAP_EMBED_URL = 'https://maps.google.com/maps?q=14.3610438,120.9320483&z=16&output=embed'
 
 export function formatPeso(n) {
   return '₱' + n.toLocaleString('en-PH')
