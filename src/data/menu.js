@@ -89,21 +89,21 @@ export const REVIEWS = [
 
 export const OPEN_HOURS = {
   0: [[9 * 60, 22 * 60 + 30]], // Sunday 9:00 AM – 10:30 PM
-  1: [[17 * 60, 22 * 60 + 30]], // Monday 5:00 PM – 10:30 PM
-  2: [[13 * 60 + 30, 22 * 60 + 30]], // Tuesday 1:30 PM – 10:30 PM
+  1: [[18 * 60 + 30, 22 * 60 + 30]], // Monday 6:30 PM – 10:30 PM
+  2: [], // Tuesday Closed
   3: [[13 * 60 + 30, 22 * 60 + 30]], // Wednesday 1:30 PM – 10:30 PM
-  4: [[17 * 60, 22 * 60 + 30]], // Thursday 5:00 PM – 10:30 PM
+  4: [[8 * 60, 11 * 60 + 30], [16 * 60, 22 * 60 + 30]], // Thursday 8:00 AM – 11:30 AM, 4:00 PM – 10:30 PM
   5: [[17 * 60 + 30, 22 * 60 + 30]], // Friday 5:30 PM – 10:30 PM
-  6: [[12 * 60 + 30, 22 * 60 + 30]], // Saturday 12:30 PM – 10:30 PM
+  6: [[9 * 60, 22 * 60 + 30]], // Saturday 9:00 AM – 10:30 PM
 }
 
 export const HOURS_TABLE = [
-  { day: 'Monday', text: '5:00 PM – 10:30 PM' },
-  { day: 'Tuesday', text: '1:30 PM – 10:30 PM' },
+  { day: 'Monday', text: '6:30 PM – 10:30 PM' },
+  { day: 'Tuesday', text: 'Closed' },
   { day: 'Wednesday', text: '1:30 PM – 10:30 PM' },
-  { day: 'Thursday', text: '5:00 PM – 10:30 PM' },
+  { day: 'Thursday', text: '8:00 AM – 11:30 AM, 4:00 PM – 10:30 PM' },
   { day: 'Friday', text: '5:30 PM – 10:30 PM' },
-  { day: 'Saturday', text: '12:30 PM – 10:30 PM' },
+  { day: 'Saturday', text: '9:00 AM – 10:30 PM' },
   { day: 'Sunday', text: '9:00 AM – 10:30 PM' },
 ]
 
