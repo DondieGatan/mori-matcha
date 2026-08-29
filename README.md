@@ -4,6 +4,8 @@ A single-page marketing + ordering site for Mori Matcha, a matcha café.
 React + Vite, no backend — order tracking posts to a Google Sheet via a
 small Apps Script (see `apps-script-order-log.gs`).
 
+**Live:** [mori-matcha-inky.vercel.app](https://mori-matcha-inky.vercel.app) — deployed and actually in use, not a demo.
+
 ## Structure
 
 ```
