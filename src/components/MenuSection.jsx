@@ -18,8 +18,8 @@ function FeaturedItem({ drink, index, onOpen, isUnavailable, isComingSoon }) {
     }
   }
 
-  const badgeClass = isUnavailable ? ' menu-badge-unavailable' : isComingSoon ? ' menu-badge-coming-soon' : ''
-  const badgeText = isUnavailable ? 'Unavailable' : isComingSoon ? 'Coming Soon' : drink.badge
+  const badgeText = isUnavailable ? 'Unavailable' : !isComingSoon ? drink.badge : null
+  const badgeClass = isUnavailable ? ' menu-badge-unavailable' : ''
 
   return (
     <div
@@ -40,6 +40,7 @@ function FeaturedItem({ drink, index, onOpen, isUnavailable, isComingSoon }) {
     >
       <div className="featured-img-wrap">
         <img src={drink.img} alt={drink.imgAlt} className="featured-img" />
+        {isComingSoon && <span className="coming-soon-center">Coming Soon</span>}
         {badgeText && <span className={'menu-badge' + badgeClass}>{badgeText}</span>}
       </div>
       <div className="featured-text">
@@ -99,13 +100,12 @@ function MenuTile({ drink, index, isSelected, isUnavailable, isComingSoon, onSel
       onAnimationEnd={() => setPop(false)}
     >
       <img src={drink.img} alt={drink.imgAlt} loading="lazy" />
+      {isComingSoon && <span className="coming-soon-center">Coming Soon</span>}
       <div className="menu-tile-overlay">
         <h3>{drink.name}</h3>
         {isUnavailable ? (
           <span className="price">Unavailable</span>
-        ) : isComingSoon ? (
-          <span className="price">Coming Soon</span>
-        ) : (
+        ) : isComingSoon ? null : (
           <span className="price">{formatPeso(drink.price)}</span>
         )}
       </div>
