@@ -32,7 +32,6 @@ export const FEATURED_DRINKS = [
     img: '/assets/classic-matcha-latte.jpg',
     imgAlt: 'Classic Matcha Latte, matcha powder sifting over a glass',
     price: 160,
-    badge: 'Best Seller',
   },
   {
     key: 'matcha-sea-salt',
@@ -41,7 +40,6 @@ export const FEATURED_DRINKS = [
     img: '/assets/matcha-sea-salt.jpg',
     imgAlt: 'Matcha Sea Salt, layered matcha and cream drink',
     price: 170,
-    badge: 'Fan Favorite',
   },
 ]
 
