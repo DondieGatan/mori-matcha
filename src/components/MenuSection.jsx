@@ -1,14 +1,14 @@
 import { useRef, useState } from 'react'
-import { FEATURED_DRINK, MENU_DRINKS, formatPeso } from '../data/menu'
+import { FEATURED_DRINKS, MENU_DRINKS, formatPeso } from '../data/menu'
 import { useReveal } from '../hooks/useReveal'
 
-function FeaturedItem({ onOpen, isUnavailable, isComingSoon }) {
-  const reveal = useReveal(0)
+function FeaturedItem({ drink, index, onOpen, isUnavailable, isComingSoon }) {
+  const reveal = useReveal(index)
   const isBlocked = isUnavailable || isComingSoon
 
   function handleClick() {
     if (isBlocked) return
-    onOpen({ key: FEATURED_DRINK.key, name: FEATURED_DRINK.name, img: FEATURED_DRINK.img, price: FEATURED_DRINK.price })
+    onOpen({ key: drink.key, name: drink.name, img: drink.img, price: drink.price })
   }
 
   function handleKeyDown(e) {
@@ -19,7 +19,7 @@ function FeaturedItem({ onOpen, isUnavailable, isComingSoon }) {
   }
 
   const badgeClass = isUnavailable ? ' menu-badge-unavailable' : isComingSoon ? ' menu-badge-coming-soon' : ''
-  const badgeText = isUnavailable ? 'Unavailable' : isComingSoon ? 'Coming Soon' : FEATURED_DRINK.badge
+  const badgeText = isUnavailable ? 'Unavailable' : isComingSoon ? 'Coming Soon' : drink.badge
 
   return (
     <div
@@ -39,14 +39,14 @@ function FeaturedItem({ onOpen, isUnavailable, isComingSoon }) {
       onKeyDown={handleKeyDown}
     >
       <div className="featured-img-wrap">
-        <img src={FEATURED_DRINK.img} alt={FEATURED_DRINK.imgAlt} className="featured-img" />
-        <span className={'menu-badge' + badgeClass}>{badgeText}</span>
+        <img src={drink.img} alt={drink.imgAlt} className="featured-img" />
+        {badgeText && <span className={'menu-badge' + badgeClass}>{badgeText}</span>}
       </div>
       <div className="featured-text">
-        <h3>{FEATURED_DRINK.name}</h3>
-        <p>{FEATURED_DRINK.description}</p>
+        <h3>{drink.name}</h3>
+        <p>{drink.description}</p>
       </div>
-      <span className="price price-lg">{formatPeso(FEATURED_DRINK.price)}</span>
+      <span className="price price-lg">{formatPeso(drink.price)}</span>
     </div>
   )
 }
@@ -113,6 +113,18 @@ function MenuTile({ drink, index, isSelected, isUnavailable, isComingSoon, onSel
   )
 }
 
+// Status rank used to sort the grid so it always reads well regardless of
+// which drinks happen to be marked available/coming-soon/unavailable at any
+// given moment — purchasable drinks surface first, coming-soon next (still
+// worth knowing about), unavailable last (least useful to see up top).
+const STATUS_RANK = { available: 0, coming_soon: 1, unavailable: 2 }
+
+function statusOf(key, unavailableKeys, comingSoonKeys) {
+  if (unavailableKeys.includes(key)) return 'unavailable'
+  if (comingSoonKeys.includes(key)) return 'coming_soon'
+  return 'available'
+}
+
 export default function MenuSection({ onOpenSugarModal, unavailableKeys = [], comingSoonKeys = [] }) {
   const [selectedKey, setSelectedKey] = useState(null)
 
@@ -120,24 +132,37 @@ export default function MenuSection({ onOpenSugarModal, unavailableKeys = [], co
     setSelectedKey((prev) => (prev === key ? null : key))
   }
 
+  const sortedDrinks = [...MENU_DRINKS].sort((a, b) => {
+    const rankA = STATUS_RANK[statusOf(a.key, unavailableKeys, comingSoonKeys)]
+    const rankB = STATUS_RANK[statusOf(b.key, unavailableKeys, comingSoonKeys)]
+    return rankA - rankB
+  })
+
   return (
     <section id="menu" className="section">
       <div className="section-inner">
         <p className="eyebrow center">The Menu</p>
         <h2 className="section-title center">Build Your Matcha</h2>
 
-        <FeaturedItem
-          onOpen={onOpenSugarModal}
-          isUnavailable={unavailableKeys.includes(FEATURED_DRINK.key)}
-          isComingSoon={comingSoonKeys.includes(FEATURED_DRINK.key)}
-        />
+        <div className="featured-grid">
+          {FEATURED_DRINKS.map((drink, i) => (
+            <FeaturedItem
+              key={drink.key}
+              drink={drink}
+              index={i}
+              onOpen={onOpenSugarModal}
+              isUnavailable={unavailableKeys.includes(drink.key)}
+              isComingSoon={comingSoonKeys.includes(drink.key)}
+            />
+          ))}
+        </div>
 
         <div className="menu-grid">
-          {MENU_DRINKS.map((drink, i) => (
+          {sortedDrinks.map((drink, i) => (
             <MenuTile
               key={drink.key}
               drink={drink}
-              index={i + 1}
+              index={i + FEATURED_DRINKS.length}
               isSelected={selectedKey === drink.key}
               isUnavailable={unavailableKeys.includes(drink.key)}
               isComingSoon={comingSoonKeys.includes(drink.key)}

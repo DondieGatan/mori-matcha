@@ -19,15 +19,31 @@ export const MILK_ELIGIBLE_DRINKS = [
   'mango-matcha-bliss',
 ]
 
-export const FEATURED_DRINK = {
-  key: 'classic-matcha-latte',
-  name: 'Classic Matcha Latte',
-  description: 'Our house standard — stone-ground matcha whisked with steamed milk.',
-  img: '/assets/classic-matcha-latte.jpg',
-  imgAlt: 'Classic Matcha Latte, matcha powder sifting over a glass',
-  price: 160,
-  badge: 'Best Seller',
-}
+// Featured drinks get the larger highlighted card treatment at the top of
+// the menu instead of a grid tile. Anyone can be featured, regardless of
+// current availability — a featured item marked unavailable/coming soon
+// still renders here (just grayed out via the same .is-unavailable/
+// .is-coming-soon classes the grid tiles use), it doesn't silently drop out.
+export const FEATURED_DRINKS = [
+  {
+    key: 'classic-matcha-latte',
+    name: 'Classic Matcha Latte',
+    description: 'Our house standard — stone-ground matcha whisked with steamed milk.',
+    img: '/assets/classic-matcha-latte.jpg',
+    imgAlt: 'Classic Matcha Latte, matcha powder sifting over a glass',
+    price: 160,
+    badge: 'Best Seller',
+  },
+  {
+    key: 'matcha-sea-salt',
+    name: 'Matcha Sea Salt',
+    description: 'Matcha and cream layered with a hint of sea salt — sweet, then salty, then sweet again.',
+    img: '/assets/matcha-sea-salt.jpg',
+    imgAlt: 'Matcha Sea Salt, layered matcha and cream drink',
+    price: 170,
+    badge: 'Fan Favorite',
+  },
+]
 
 export const MENU_DRINKS = [
   {
@@ -50,13 +66,6 @@ export const MENU_DRINKS = [
     img: '/assets/matcha-strawberry.jpg',
     imgAlt: 'Strawberry Matcha Latte, matcha over a strawberry layer with a fresh strawberry on top',
     price: 190,
-  },
-  {
-    key: 'matcha-sea-salt',
-    name: 'Matcha Sea Salt',
-    img: '/assets/matcha-sea-salt.jpg',
-    imgAlt: 'Matcha Sea Salt, layered matcha and cream drink',
-    price: 170,
   },
   {
     key: 'mango-matcha-bliss',

@@ -327,13 +327,19 @@ img { max-width: 100%; display: block; }
 .section-title.center { text-align: center; }
 
 /* Menu */
+.featured-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
 .featured-item {
   display: flex;
   align-items: center;
   gap: 30px;
   padding: 16px 34px 16px 16px;
   border-radius: 18px;
-  margin-bottom: 40px;
   background: var(--cream-card);
   box-shadow: 0 10px 30px rgba(45, 68, 51, 0.08);
   cursor: pointer;

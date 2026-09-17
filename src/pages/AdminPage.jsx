@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { FEATURED_DRINK, MENU_DRINKS, formatPeso } from '../data/menu'
+import { FEATURED_DRINKS, MENU_DRINKS, formatPeso } from '../data/menu'
 
 const ADMIN_KEY_STORAGE = 'mori-matcha-admin-key'
 const STATUSES = ['pending', 'paid', 'shipped']
@@ -9,7 +9,7 @@ const AVAILABILITY_STATUSES = [
   { value: 'unavailable', label: 'Unavailable' },
   { value: 'coming_soon', label: 'Coming Soon' },
 ]
-const ALL_DRINKS = [FEATURED_DRINK, ...MENU_DRINKS]
+const ALL_DRINKS = [...FEATURED_DRINKS, ...MENU_DRINKS]
 
 function formatTimestamp(iso) {
   return new Intl.DateTimeFormat('en-PH', {
