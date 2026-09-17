@@ -18,7 +18,7 @@ import { useAvailability } from './hooks/useAvailability'
 
 export default function App() {
   const cart = useCart()
-  const soldOutKeys = useAvailability()
+  const { unavailableKeys, comingSoonKeys } = useAvailability()
   const [sugarModalDrink, setSugarModalDrink] = useState(null)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [bumpKey, setBumpKey] = useState(0)
@@ -34,7 +34,7 @@ export default function App() {
       <main>
         <Hero />
         <RitualStrip />
-        <MenuSection onOpenSugarModal={setSugarModalDrink} soldOutKeys={soldOutKeys} />
+        <MenuSection onOpenSugarModal={setSugarModalDrink} unavailableKeys={unavailableKeys} comingSoonKeys={comingSoonKeys} />
         <AboutSection />
         <VisitSection />
         <FaqSection />

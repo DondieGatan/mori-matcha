@@ -2,11 +2,12 @@ import { useRef, useState } from 'react'
 import { FEATURED_DRINK, MENU_DRINKS, formatPeso } from '../data/menu'
 import { useReveal } from '../hooks/useReveal'
 
-function FeaturedItem({ onOpen, isSoldOut }) {
+function FeaturedItem({ onOpen, isUnavailable, isComingSoon }) {
   const reveal = useReveal(0)
+  const isBlocked = isUnavailable || isComingSoon
 
   function handleClick() {
-    if (isSoldOut) return
+    if (isBlocked) return
     onOpen({ key: FEATURED_DRINK.key, name: FEATURED_DRINK.name, img: FEATURED_DRINK.img, price: FEATURED_DRINK.price })
   }
 
@@ -17,23 +18,29 @@ function FeaturedItem({ onOpen, isSoldOut }) {
     }
   }
 
+  const badgeClass = isUnavailable ? ' menu-badge-unavailable' : isComingSoon ? ' menu-badge-coming-soon' : ''
+  const badgeText = isUnavailable ? 'Unavailable' : isComingSoon ? 'Coming Soon' : FEATURED_DRINK.badge
+
   return (
     <div
       ref={reveal.ref}
       style={reveal.style}
-      className={reveal.className + ' featured-item featured-glow' + (isSoldOut ? ' is-sold-out' : '')}
+      className={
+        reveal.className +
+        ' featured-item featured-glow' +
+        (isUnavailable ? ' is-unavailable' : '') +
+        (isComingSoon ? ' is-coming-soon' : '')
+      }
       tabIndex={0}
       role="button"
       aria-haspopup="dialog"
-      aria-disabled={isSoldOut}
+      aria-disabled={isBlocked}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
     >
       <div className="featured-img-wrap">
         <img src={FEATURED_DRINK.img} alt={FEATURED_DRINK.imgAlt} className="featured-img" />
-        <span className={'menu-badge' + (isSoldOut ? ' menu-badge-sold-out' : '')}>
-          {isSoldOut ? 'Sold Out' : FEATURED_DRINK.badge}
-        </span>
+        <span className={'menu-badge' + badgeClass}>{badgeText}</span>
       </div>
       <div className="featured-text">
         <h3>{FEATURED_DRINK.name}</h3>
@@ -44,10 +51,11 @@ function FeaturedItem({ onOpen, isSoldOut }) {
   )
 }
 
-function MenuTile({ drink, index, isSelected, isSoldOut, onSelect, onOpen }) {
+function MenuTile({ drink, index, isSelected, isUnavailable, isComingSoon, onSelect, onOpen }) {
   const reveal = useReveal(index)
   const [pop, setPop] = useState(false)
   const tileElRef = useRef(null)
+  const isBlocked = isUnavailable || isComingSoon
 
   function setRefs(node) {
     tileElRef.current = node
@@ -55,7 +63,7 @@ function MenuTile({ drink, index, isSelected, isSoldOut, onSelect, onOpen }) {
   }
 
   function handleClick() {
-    if (isSoldOut) return
+    if (isBlocked) return
     onOpen({ key: drink.key, name: drink.name, img: drink.img, price: drink.price })
     onSelect(drink.key)
     setPop(false)
@@ -79,12 +87,13 @@ function MenuTile({ drink, index, isSelected, isSoldOut, onSelect, onOpen }) {
         ' menu-tile' +
         (isSelected ? ' is-selected' : '') +
         (pop ? ' pop' : '') +
-        (isSoldOut ? ' is-sold-out' : '')
+        (isUnavailable ? ' is-unavailable' : '') +
+        (isComingSoon ? ' is-coming-soon' : '')
       }
       tabIndex={0}
       role="button"
       aria-haspopup="dialog"
-      aria-disabled={isSoldOut}
+      aria-disabled={isBlocked}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       onAnimationEnd={() => setPop(false)}
@@ -92,13 +101,19 @@ function MenuTile({ drink, index, isSelected, isSoldOut, onSelect, onOpen }) {
       <img src={drink.img} alt={drink.imgAlt} loading="lazy" />
       <div className="menu-tile-overlay">
         <h3>{drink.name}</h3>
-        {isSoldOut ? <span className="price">Sold Out</span> : <span className="price">{formatPeso(drink.price)}</span>}
+        {isUnavailable ? (
+          <span className="price">Unavailable</span>
+        ) : isComingSoon ? (
+          <span className="price">Coming Soon</span>
+        ) : (
+          <span className="price">{formatPeso(drink.price)}</span>
+        )}
       </div>
     </div>
   )
 }
 
-export default function MenuSection({ onOpenSugarModal, soldOutKeys = [] }) {
+export default function MenuSection({ onOpenSugarModal, unavailableKeys = [], comingSoonKeys = [] }) {
   const [selectedKey, setSelectedKey] = useState(null)
 
   function handleSelect(key) {
@@ -111,7 +126,11 @@ export default function MenuSection({ onOpenSugarModal, soldOutKeys = [] }) {
         <p className="eyebrow center">The Menu</p>
         <h2 className="section-title center">Build Your Matcha</h2>
 
-        <FeaturedItem onOpen={onOpenSugarModal} isSoldOut={soldOutKeys.includes(FEATURED_DRINK.key)} />
+        <FeaturedItem
+          onOpen={onOpenSugarModal}
+          isUnavailable={unavailableKeys.includes(FEATURED_DRINK.key)}
+          isComingSoon={comingSoonKeys.includes(FEATURED_DRINK.key)}
+        />
 
         <div className="menu-grid">
           {MENU_DRINKS.map((drink, i) => (
@@ -120,7 +139,8 @@ export default function MenuSection({ onOpenSugarModal, soldOutKeys = [] }) {
               drink={drink}
               index={i + 1}
               isSelected={selectedKey === drink.key}
-              isSoldOut={soldOutKeys.includes(drink.key)}
+              isUnavailable={unavailableKeys.includes(drink.key)}
+              isComingSoon={comingSoonKeys.includes(drink.key)}
               onSelect={handleSelect}
               onOpen={onOpenSugarModal}
             />

@@ -3,38 +3,54 @@ import { isAuthorized } from './_lib/auth.js'
 
 const sql = neon(process.env.DATABASE_URL, { fullResults: true })
 
+const STATUSES = ['available', 'unavailable', 'coming_soon']
+
 async function ensureTable() {
   await sql`
     CREATE TABLE IF NOT EXISTS availability (
       drink_key TEXT PRIMARY KEY,
-      available BOOLEAN NOT NULL DEFAULT true,
+      status TEXT NOT NULL DEFAULT 'available',
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `
+  // Migrates a pre-existing table from the old boolean `available` column
+  // (true/false) to `status` — additive and idempotent, safe to run on
+  // every cold start even once every row has already been migrated.
+  await sql`ALTER TABLE availability ADD COLUMN IF NOT EXISTS status TEXT`
+  await sql`
+    UPDATE availability SET status = CASE WHEN available THEN 'available' ELSE 'unavailable' END
+    WHERE status IS NULL AND available IS NOT NULL
+  `.catch(() => {})
+  await sql`UPDATE availability SET status = 'available' WHERE status IS NULL`
+  await sql`ALTER TABLE availability ALTER COLUMN status SET DEFAULT 'available'`
+  await sql`ALTER TABLE availability ALTER COLUMN status SET NOT NULL`
+  await sql`ALTER TABLE availability DROP COLUMN IF EXISTS available`
 }
 
 // A drink with no row here is assumed available -- rows only need to exist
-// for drinks that have been explicitly marked sold out.
+// for drinks that have been explicitly marked unavailable or coming soon.
 export default async function handler(req, res) {
   await ensureTable()
 
   if (req.method === 'GET') {
-    const { rows } = await sql`SELECT drink_key FROM availability WHERE available = false`
-    return res.status(200).json({ soldOut: rows.map((r) => r.drink_key) })
+    const { rows } = await sql`SELECT drink_key, status FROM availability WHERE status != 'available'`
+    const statuses = {}
+    for (const r of rows) statuses[r.drink_key] = r.status
+    return res.status(200).json({ statuses })
   }
 
   if (req.method === 'PATCH') {
     if (!isAuthorized(req)) {
       return res.status(401).json({ error: 'Unauthorized' })
     }
-    const { drinkKey, available } = req.body || {}
-    if (!drinkKey || typeof available !== 'boolean') {
-      return res.status(400).json({ error: 'drinkKey and available (boolean) are required' })
+    const { drinkKey, status } = req.body || {}
+    if (!drinkKey || !STATUSES.includes(status)) {
+      return res.status(400).json({ error: 'drinkKey and a valid status (available, unavailable, coming_soon) are required' })
     }
     await sql`
-      INSERT INTO availability (drink_key, available, updated_at)
-      VALUES (${drinkKey}, ${available}, now())
-      ON CONFLICT (drink_key) DO UPDATE SET available = ${available}, updated_at = now()
+      INSERT INTO availability (drink_key, status, updated_at)
+      VALUES (${drinkKey}, ${status}, now())
+      ON CONFLICT (drink_key) DO UPDATE SET status = ${status}, updated_at = now()
     `
     return res.status(200).json({ ok: true })
   }

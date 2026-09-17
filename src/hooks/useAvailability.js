@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
 
 export function useAvailability() {
-  const [soldOutKeys, setSoldOutKeys] = useState([])
+  const [statuses, setStatuses] = useState({})
 
   useEffect(() => {
     let cancelled = false
     fetch('/api/availability')
-      .then((res) => (res.ok ? res.json() : { soldOut: [] }))
+      .then((res) => (res.ok ? res.json() : { statuses: {} }))
       .then((data) => {
-        if (!cancelled) setSoldOutKeys(data.soldOut || [])
+        if (!cancelled) setStatuses(data.statuses || {})
       })
       .catch(() => {})
     return () => {
@@ -16,5 +16,8 @@ export function useAvailability() {
     }
   }, [])
 
-  return soldOutKeys
+  const unavailableKeys = Object.keys(statuses).filter((k) => statuses[k] === 'unavailable')
+  const comingSoonKeys = Object.keys(statuses).filter((k) => statuses[k] === 'coming_soon')
+
+  return { statuses, unavailableKeys, comingSoonKeys }
 }

@@ -376,20 +376,26 @@ img { max-width: 100%; display: block; }
 }
 
 .menu-badge-new { background: #b3453d; }
-.menu-badge-sold-out { background: var(--text-dim); }
+.menu-badge-unavailable { background: var(--text-dim); }
+.menu-badge-coming-soon { background: var(--forest); }
 
-.featured-item.is-sold-out,
-.menu-tile.is-sold-out {
+.featured-item.is-unavailable,
+.featured-item.is-coming-soon,
+.menu-tile.is-unavailable,
+.menu-tile.is-coming-soon {
   cursor: not-allowed;
 }
 
-.featured-item.is-sold-out .featured-img,
-.menu-tile.is-sold-out img {
+.featured-item.is-unavailable .featured-img,
+.featured-item.is-coming-soon .featured-img,
+.menu-tile.is-unavailable img,
+.menu-tile.is-coming-soon img {
   filter: grayscale(1);
   opacity: 0.55;
 }
 
-.menu-tile.is-sold-out .menu-tile-overlay .price {
+.menu-tile.is-unavailable .menu-tile-overlay .price,
+.menu-tile.is-coming-soon .menu-tile-overlay .price {
   color: var(--cream-soft);
   opacity: 0.85;
 }

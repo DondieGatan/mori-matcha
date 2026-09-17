@@ -4,6 +4,11 @@ import { FEATURED_DRINK, MENU_DRINKS, formatPeso } from '../data/menu'
 const ADMIN_KEY_STORAGE = 'mori-matcha-admin-key'
 const STATUSES = ['pending', 'paid', 'shipped']
 const PAYMENT_METHODS = ['GCash', 'BDO', 'Maya', 'Cash']
+const AVAILABILITY_STATUSES = [
+  { value: 'available', label: 'Available' },
+  { value: 'unavailable', label: 'Unavailable' },
+  { value: 'coming_soon', label: 'Coming Soon' },
+]
 const ALL_DRINKS = [FEATURED_DRINK, ...MENU_DRINKS]
 
 function formatTimestamp(iso) {
@@ -63,7 +68,7 @@ export default function AdminPage() {
   const [orders, setOrders] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [soldOutKeys, setSoldOutKeys] = useState([])
+  const [availabilityStatuses, setAvailabilityStatuses] = useState({})
 
   const loadOrders = useCallback(async (key) => {
     setLoading(true)
@@ -97,7 +102,7 @@ export default function AdminPage() {
       const res = await fetch('/api/availability')
       if (!res.ok) return
       const data = await res.json()
-      setSoldOutKeys(data.soldOut || [])
+      setAvailabilityStatuses(data.statuses || {})
     } catch (e) {}
   }, [])
 
@@ -108,13 +113,18 @@ export default function AdminPage() {
     }
   }, [adminKey, loadOrders, loadAvailability])
 
-  async function handleAvailabilityToggle(drinkKey, available) {
-    setSoldOutKeys((prev) => (available ? prev.filter((k) => k !== drinkKey) : [...prev, drinkKey]))
+  async function handleAvailabilityChange(drinkKey, status) {
+    setAvailabilityStatuses((prev) => {
+      const next = { ...prev }
+      if (status === 'available') delete next[drinkKey]
+      else next[drinkKey] = status
+      return next
+    })
     try {
       const res = await fetch('/api/availability', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
-        body: JSON.stringify({ drinkKey, available }),
+        body: JSON.stringify({ drinkKey, status }),
       })
       if (!res.ok) throw new Error('failed')
     } catch (e) {
@@ -203,16 +213,22 @@ export default function AdminPage() {
         <h2>Menu Availability</h2>
         <div className="admin-availability-list">
           {ALL_DRINKS.map((drink) => {
-            const available = !soldOutKeys.includes(drink.key)
+            const status = availabilityStatuses[drink.key] || 'available'
             return (
-              <label key={drink.key} className="admin-availability-item">
-                <input
-                  type="checkbox"
-                  checked={available}
-                  onChange={(e) => handleAvailabilityToggle(drink.key, e.target.checked)}
-                />
-                {drink.name}
-              </label>
+              <div key={drink.key} className="admin-availability-item">
+                <span>{drink.name}</span>
+                <select
+                  className="admin-status-select"
+                  value={status}
+                  onChange={(e) => handleAvailabilityChange(drink.key, e.target.value)}
+                >
+                  {AVAILABILITY_STATUSES.map((s) => (
+                    <option key={s.value} value={s.value}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )
           })}
         </div>
