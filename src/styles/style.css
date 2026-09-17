@@ -354,7 +354,7 @@ img { max-width: 100%; display: block; }
   outline-offset: 3px;
 }
 
-.featured-img-wrap { position: relative; flex-shrink: 0; }
+.featured-img-wrap { position: relative; flex-shrink: 0; overflow: hidden; border-radius: 14px; }
 
 .featured-img {
   width: 130px;
@@ -393,12 +393,20 @@ img { max-width: 100%; display: block; }
 }
 
 .featured-item.is-unavailable .featured-img,
-.featured-item.is-coming-soon .featured-img,
-.menu-tile.is-unavailable img,
-.menu-tile.is-coming-soon img {
+.menu-tile.is-unavailable img {
   filter: grayscale(1);
   opacity: 0.55;
 }
+
+/* Coming-soon drinks get a teaser blur instead of a flat grayscale —
+   still colorful and enticing, just not revealed yet. */
+.featured-item.is-coming-soon .featured-img,
+.menu-tile.is-coming-soon img {
+  filter: blur(9px) saturate(1.15);
+  transform: scale(1.15);
+}
+
+.menu-tile.is-coming-soon:hover img { transform: scale(1.2); }
 
 .menu-tile.is-unavailable .menu-tile-overlay .price,
 .menu-tile.is-coming-soon .menu-tile-overlay .price {
