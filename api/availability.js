@@ -5,7 +5,14 @@ const sql = neon(process.env.DATABASE_URL, { fullResults: true })
 
 const STATUSES = ['available', 'unavailable', 'coming_soon']
 
+// The migration below is idempotent but not free — skip it once it has
+// already succeeded on this warm serverless instance, since the client now
+// polls this endpoint every few seconds and would otherwise re-run six
+// queries' worth of schema checks on every single poll.
+let migrated = false
+
 async function ensureTable() {
+  if (migrated) return
   await sql`
     CREATE TABLE IF NOT EXISTS availability (
       drink_key TEXT PRIMARY KEY,
@@ -25,6 +32,7 @@ async function ensureTable() {
   await sql`ALTER TABLE availability ALTER COLUMN status SET DEFAULT 'available'`
   await sql`ALTER TABLE availability ALTER COLUMN status SET NOT NULL`
   await sql`ALTER TABLE availability DROP COLUMN IF EXISTS available`
+  migrated = true
 }
 
 // A drink with no row here is assumed available -- rows only need to exist
