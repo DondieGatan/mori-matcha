@@ -7,8 +7,8 @@ const FAQ_ITEMS = [
     answer: (
       <>
         Tap any drink on <a href="#menu">the menu</a>, pick your sugar level (and milk, for drinks that offer it) and
-        quantity, then add it to your cart. When you're ready, open your cart and send the order to us on Instagram —
-        your cart also shows a quick step-by-step guide to walk you through it.
+        quantity, then add it to your cart. When you're ready, open your cart, copy your order, and send it to us on
+        Instagram — your cart also shows a quick step-by-step guide to walk you through it.
       </>
     ),
   },
@@ -19,7 +19,7 @@ const FAQ_ITEMS = [
   },
   {
     question: 'How do I pay?',
-    answer: "Send your order through Instagram and we'll confirm it, then reply with GCash, Maya, bank transfer, or cash details — whichever's easiest for you.",
+    answer: "Send your order through Instagram and we'll confirm it, then reply with GCash, BDO, Maya, or cash details — whichever's easiest for you.",
   },
   {
     question: 'Where are you located, and what are your hours?',
