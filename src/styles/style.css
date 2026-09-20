@@ -1010,6 +1010,58 @@ img { max-width: 100%; display: block; }
 
 .cart-panel .sugar-modal-close { position: absolute; top: 14px; right: 14px; }
 
+.cart-steps {
+  padding: 12px 24px;
+  background: var(--cream-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.cart-steps-title {
+  font-family: 'Jost', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--forest);
+  margin: 0 0 8px;
+}
+
+.cart-steps ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cart-steps li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.35;
+}
+
+.cart-steps li::before {
+  content: counter(step);
+  counter-increment: step;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--forest);
+  color: var(--cream-soft);
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.cart-steps ol { counter-reset: step; }
+
 .cart-items {
   overflow-y: auto;
   padding: 10px 24px;
@@ -1449,6 +1501,22 @@ img { max-width: 100%; display: block; }
 
 .admin-delete-btn:hover { background: #a33; color: var(--cream-soft); }
 
+.admin-restore-btn {
+  padding: 6px 10px;
+  border: 1px solid var(--forest);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--forest);
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-restore-btn:hover { background: var(--forest); color: var(--cream-soft); }
+
+.admin-trash-actions { display: flex; gap: 8px; }
+
 .admin-availability {
   margin-bottom: 32px;
   padding: 16px 20px;
@@ -1465,15 +1533,19 @@ img { max-width: 100%; display: block; }
 }
 
 .admin-availability-list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 14px 24px;
 }
 
 .admin-availability-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 0.9rem;
-  cursor: pointer;
 }
+
+.admin-availability-item span { flex: 1; min-width: 0; }
+
+.admin-availability-item .admin-status-select { flex-shrink: 0; width: 140px; }

@@ -110,6 +110,15 @@ export default function CartModal({ isOpen, cart, orderNumber, cartTotal, onClos
             &times;
           </button>
         </div>
+        <div className="cart-steps">
+          <p className="cart-steps-title">How Ordering Works</p>
+          <ol>
+            <li>Pick your drinks, sugar level, and milk, then add them to your cart.</li>
+            <li>Review your order below and tap "Send Order via Instagram."</li>
+            <li>We'll reply with GCash, Maya, bank, or cash details to confirm.</li>
+            <li>Once confirmed, we'll start preparing your drink!</li>
+          </ol>
+        </div>
         <div className="cart-items">
           {cart.map((item) => {
             let metaText = item.level + ' sugar'

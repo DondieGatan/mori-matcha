@@ -3,7 +3,10 @@ import { isAuthorized } from './_lib/auth.js'
 
 const sql = neon(process.env.DATABASE_URL, { fullResults: true })
 
+let migrated = false
+
 async function ensureTable() {
+  if (migrated) return
   await sql`
     CREATE TABLE IF NOT EXISTS orders (
       id SERIAL PRIMARY KEY,
@@ -17,6 +20,10 @@ async function ensureTable() {
   `
   // Migration for tables created before payment_method existed.
   await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT`
+  // Soft-delete support: a deleted order just gets a deleted_at stamp instead
+  // of being removed, so the admin trash view can restore it.
+  await sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`
+  migrated = true
 }
 
 export default async function handler(req, res) {
@@ -53,7 +60,10 @@ export default async function handler(req, res) {
     if (!isAuthorized(req)) {
       return res.status(401).json({ error: 'Unauthorized' })
     }
-    const { rows } = await sql`SELECT * FROM orders ORDER BY created_at DESC`
+    const wantsTrash = req.query.trash === '1' || req.query.trash === 'true'
+    const { rows } = wantsTrash
+      ? await sql`SELECT * FROM orders WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC`
+      : await sql`SELECT * FROM orders WHERE deleted_at IS NULL ORDER BY created_at DESC`
     return res.status(200).json({ orders: rows })
   }
 

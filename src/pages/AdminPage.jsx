@@ -69,6 +69,9 @@ export default function AdminPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [availabilityStatuses, setAvailabilityStatuses] = useState({})
+  const [view, setView] = useState('orders')
+  const [trashOrders, setTrashOrders] = useState(null)
+  const [trashLoading, setTrashLoading] = useState(false)
 
   const loadOrders = useCallback(async (key) => {
     setLoading(true)
@@ -96,6 +99,23 @@ export default function AdminPage() {
       setLoading(false)
     }
   }, [])
+
+  const loadTrash = useCallback(async () => {
+    setTrashLoading(true)
+    try {
+      const res = await fetch('/api/orders?trash=1', { headers: { 'X-Admin-Key': adminKey } })
+      if (res.ok) {
+        const data = await res.json()
+        setTrashOrders(data.orders)
+      }
+    } catch (e) {}
+    setTrashLoading(false)
+  }, [adminKey])
+
+  function handleViewTrash() {
+    setView('trash')
+    loadTrash()
+  }
 
   const loadAvailability = useCallback(async () => {
     try {
@@ -170,7 +190,7 @@ export default function AdminPage() {
   }
 
   async function handleDelete(orderNumber) {
-    if (!window.confirm('Delete order ' + orderNumber + '? This cannot be undone.')) return
+    if (!window.confirm('Move order ' + orderNumber + ' to trash? You can restore it later from the Trash tab.')) return
     const previous = orders
     setOrders((prev) => prev.filter((o) => o.order_number !== orderNumber))
     try {
@@ -182,6 +202,39 @@ export default function AdminPage() {
     } catch (e) {
       setOrders(previous)
       setError('Failed to delete ' + orderNumber + ' — try again.')
+    }
+  }
+
+  async function handleRestore(orderNumber) {
+    const previous = trashOrders
+    setTrashOrders((prev) => prev.filter((o) => o.order_number !== orderNumber))
+    try {
+      const res = await fetch('/api/orders/' + encodeURIComponent(orderNumber), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
+        body: JSON.stringify({ restore: true }),
+      })
+      if (!res.ok) throw new Error('failed')
+      loadOrders(adminKey)
+    } catch (e) {
+      setTrashOrders(previous)
+      setError('Failed to restore ' + orderNumber + ' — try again.')
+    }
+  }
+
+  async function handleDeleteForever(orderNumber) {
+    if (!window.confirm('Permanently delete order ' + orderNumber + '? This cannot be undone.')) return
+    const previous = trashOrders
+    setTrashOrders((prev) => prev.filter((o) => o.order_number !== orderNumber))
+    try {
+      const res = await fetch('/api/orders/' + encodeURIComponent(orderNumber) + '?permanent=1', {
+        method: 'DELETE',
+        headers: { 'X-Admin-Key': adminKey },
+      })
+      if (!res.ok) throw new Error('failed')
+    } catch (e) {
+      setTrashOrders(previous)
+      setError('Failed to permanently delete ' + orderNumber + ' — try again.')
     }
   }
 
@@ -235,24 +288,41 @@ export default function AdminPage() {
       </div>
 
       <div className="admin-header">
-        <h1>Mori Matcha — Orders</h1>
+        <h1>Mori Matcha — {view === 'trash' ? 'Trash' : 'Orders'}</h1>
         <div className="admin-header-actions">
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => downloadOrdersCsv(orders || [])}
-            disabled={!orders || orders.length === 0}
-          >
-            Download CSV
-          </button>
-          <button type="button" className="btn btn-ghost" onClick={() => loadOrders(adminKey)} disabled={loading}>
-            {loading ? 'Refreshing…' : 'Refresh'}
-          </button>
+          {view === 'orders' ? (
+            <>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => downloadOrdersCsv(orders || [])}
+                disabled={!orders || orders.length === 0}
+              >
+                Download CSV
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => loadOrders(adminKey)} disabled={loading}>
+                {loading ? 'Refreshing…' : 'Refresh'}
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={handleViewTrash}>
+                Trash
+              </button>
+            </>
+          ) : (
+            <>
+              <button type="button" className="btn btn-ghost" onClick={loadTrash} disabled={trashLoading}>
+                {trashLoading ? 'Refreshing…' : 'Refresh'}
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setView('orders')}>
+                Back to Orders
+              </button>
+            </>
+          )}
         </div>
       </div>
       {error && <p className="admin-error">{error}</p>}
-      {orders && orders.length === 0 && <p>No orders yet.</p>}
-      {orders && orders.length > 0 && (
+
+      {view === 'orders' && orders && orders.length === 0 && <p>No orders yet.</p>}
+      {view === 'orders' && orders && orders.length > 0 && (
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
@@ -308,6 +378,51 @@ export default function AdminPage() {
                       onClick={() => handleDelete(order.order_number)}
                     >
                       Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {view === 'trash' && trashOrders && trashOrders.length === 0 && <p>Trash is empty.</p>}
+      {view === 'trash' && trashOrders && trashOrders.length > 0 && (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Deleted</th>
+                <th>Order #</th>
+                <th>Items</th>
+                <th>Total</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {trashOrders.map((order) => (
+                <tr key={order.order_number}>
+                  <td>{formatTimestamp(order.deleted_at)}</td>
+                  <td>{order.order_number}</td>
+                  <td>{formatItems(order.items)}</td>
+                  <td>{formatPeso(Number(order.total))}</td>
+                  <td className="admin-trash-actions">
+                    <button
+                      type="button"
+                      className="admin-restore-btn"
+                      aria-label={'Restore order ' + order.order_number}
+                      onClick={() => handleRestore(order.order_number)}
+                    >
+                      Restore
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-delete-btn"
+                      aria-label={'Permanently delete order ' + order.order_number}
+                      onClick={() => handleDeleteForever(order.order_number)}
+                    >
+                      Delete Forever
                     </button>
                   </td>
                 </tr>

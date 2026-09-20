@@ -19,12 +19,30 @@ export default async function handler(req, res) {
   const { orderNumber } = req.query
 
   if (req.method === 'DELETE') {
-    const { rowCount } = await sql`DELETE FROM orders WHERE order_number = ${orderNumber}`
+    const permanent = req.query.permanent === '1' || req.query.permanent === 'true'
+    if (permanent) {
+      // Only ever permanently erases an order that's already in the trash —
+      // never a live one, even if this query param were passed by mistake.
+      const { rowCount } = await sql`DELETE FROM orders WHERE order_number = ${orderNumber} AND deleted_at IS NOT NULL`
+      if (rowCount === 0) return res.status(404).json({ error: 'Order not found in trash' })
+      return res.status(200).json({ ok: true })
+    }
+    const { rowCount } = await sql`
+      UPDATE orders SET deleted_at = now() WHERE order_number = ${orderNumber} AND deleted_at IS NULL
+    `
     if (rowCount === 0) return res.status(404).json({ error: 'Order not found' })
     return res.status(200).json({ ok: true })
   }
 
-  const { status, paymentMethod } = req.body || {}
+  const { status, paymentMethod, restore } = req.body || {}
+
+  if (restore) {
+    const { rowCount } = await sql`
+      UPDATE orders SET deleted_at = NULL WHERE order_number = ${orderNumber} AND deleted_at IS NOT NULL
+    `
+    if (rowCount === 0) return res.status(404).json({ error: 'Order not found in trash' })
+    return res.status(200).json({ ok: true })
+  }
 
   if (status === undefined && paymentMethod === undefined) {
     return res.status(400).json({ error: 'Provide status and/or paymentMethod' })
