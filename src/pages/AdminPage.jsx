@@ -397,6 +397,7 @@ export default function AdminPage() {
                 <th>Order #</th>
                 <th>Items</th>
                 <th>Total</th>
+                <th>Payment</th>
                 <th></th>
               </tr>
             </thead>
@@ -407,6 +408,7 @@ export default function AdminPage() {
                   <td>{order.order_number}</td>
                   <td>{formatItems(order.items)}</td>
                   <td>{formatPeso(Number(order.total))}</td>
+                  <td>{order.payment_method || '—'}</td>
                   <td className="admin-trash-actions">
                     <button
                       type="button"
