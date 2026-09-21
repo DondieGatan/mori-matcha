@@ -1343,6 +1343,7 @@ img { max-width: 100%; display: block; }
 .feedback-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  align-items: start;
   gap: 18px;
   margin-bottom: 8px;
 }
@@ -1372,6 +1373,26 @@ img { max-width: 100%; display: block; }
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 6;
   overflow: hidden;
+}
+
+.feedback-text.is-expanded {
+  -webkit-line-clamp: unset;
+  display: block;
+  overflow: visible;
+}
+
+.feedback-toggle {
+  display: block;
+  margin: 0 0 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--forest);
+  font-family: 'Jost', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .feedback-meta {

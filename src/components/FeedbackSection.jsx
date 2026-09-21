@@ -1,9 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { GOOGLE_REVIEW_URL, REVIEWS } from '../data/menu'
 import { useReveal } from '../hooks/useReveal'
 
 function FeedbackCard({ review, index }) {
   const reveal = useReveal(index)
+  const [expanded, setExpanded] = useState(false)
+  const [canExpand, setCanExpand] = useState(false)
+  const textRef = useRef(null)
+
+  useEffect(() => {
+    const el = textRef.current
+    if (el && !expanded) {
+      setCanExpand(el.scrollHeight > el.clientHeight + 1)
+    }
+  }, [expanded, review.text])
+
   let stars = ''
   for (let s = 0; s < 5; s++) stars += s < review.rating ? '★' : '☆'
 
@@ -12,7 +23,14 @@ function FeedbackCard({ review, index }) {
       <div className="feedback-stars" aria-label={review.rating + ' out of 5 stars'}>
         {stars}
       </div>
-      <p className="feedback-text">“{review.text}”</p>
+      <p ref={textRef} className={'feedback-text' + (expanded ? ' is-expanded' : '')}>
+        “{review.text}”
+      </p>
+      {(canExpand || expanded) && (
+        <button type="button" className="feedback-toggle" onClick={() => setExpanded((v) => !v)}>
+          {expanded ? 'Show less' : 'Read more'}
+        </button>
+      )}
       <p className="feedback-meta">
         {review.name}
         {review.drink ? ' · ' + review.drink : ''}
