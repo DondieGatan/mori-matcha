@@ -40,7 +40,9 @@ export default function FeedbackSection() {
         const live = data.reviews || []
         const liveNames = new Set(live.map((r) => r.name.toLowerCase()))
         const staticOnly = REVIEWS.filter((r) => !liveNames.has(r.name.toLowerCase()))
-        setReviews([...live, ...staticOnly])
+        // Cap the count so this stays a tidy highlights section instead of
+        // growing indefinitely as Google surfaces more reviews over time.
+        setReviews([...live, ...staticOnly].slice(0, 4))
       })
       .catch(() => {})
     return () => {

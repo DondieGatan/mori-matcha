@@ -1366,6 +1366,12 @@ img { max-width: 100%; display: block; }
   color: var(--text);
   font-size: 0.92rem;
   line-height: 1.6;
+  /* Real Google reviews vary wildly in length — clamp so one long review
+     doesn't stretch its whole grid row and dwarf the shorter cards next to it. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  overflow: hidden;
 }
 
 .feedback-meta {
