@@ -49,7 +49,7 @@ export const MENU_DRINKS = [
     name: 'Ube Matcha Latte',
     img: '/assets/ube-matcha-coconut.jpg',
     imgAlt: 'Ube Matcha Latte, purple and green layered drink',
-    price: 170,
+    price: 190,
   },
   {
     key: 'chocolate-cookies',
@@ -70,7 +70,7 @@ export const MENU_DRINKS = [
     name: 'Mango Matcha Bliss',
     img: '/assets/mango-matcha-bliss.jpg',
     imgAlt: 'Mango Matcha Bliss, matcha and mango layered drink topped with mango chunks',
-    price: 180,
+    price: 190,
   },
 ]
 
