@@ -101,6 +101,9 @@ function MenuTile({ drink, index, isSelected, isUnavailable, isComingSoon, onSel
     >
       <img src={drink.img} alt={drink.imgAlt} loading="lazy" />
       {isComingSoon && <span className="coming-soon-center">Coming Soon</span>}
+      {drink.badge && !isBlocked && (
+        <span className={'menu-badge' + (drink.badge === 'New' ? ' menu-badge-new' : '')}>{drink.badge}</span>
+      )}
       <div className="menu-tile-overlay">
         <h3>{drink.name}</h3>
         {isUnavailable ? (

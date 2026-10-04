@@ -51,6 +51,7 @@ export const MENU_DRINKS = [
     img: '/assets/ube-matcha-coconut.jpg',
     imgAlt: 'Ube Matcha Latte, purple and green layered drink',
     price: 190,
+    badge: 'New',
   },
   {
     key: 'chocolate-cookies',
@@ -65,6 +66,7 @@ export const MENU_DRINKS = [
     img: '/assets/matcha-strawberry.jpg',
     imgAlt: 'Strawberry Matcha Latte, matcha over a strawberry layer with a fresh strawberry on top',
     price: 190,
+    badge: 'New',
   },
   {
     key: 'mango-matcha-bliss',
@@ -72,6 +74,7 @@ export const MENU_DRINKS = [
     img: '/assets/mango-matcha-bliss.jpg',
     imgAlt: 'Mango Matcha Bliss, matcha and mango layered drink topped with mango chunks',
     price: 190,
+    badge: 'New',
   },
   {
     key: 'oreo-cloud-matcha',
@@ -79,6 +82,7 @@ export const MENU_DRINKS = [
     img: '/assets/oreo-cloud-matcha.jpg',
     imgAlt: 'Oreo Cloud Matcha, matcha over creamy milk and cookie crumbs, topped with an Oreo cookie',
     price: 200,
+    badge: 'New',
   },
 ]
 
