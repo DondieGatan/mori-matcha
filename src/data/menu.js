@@ -3,7 +3,6 @@ export const SUGAR_DATA = {
   'mango-matcha-bliss': { unit: 'Agave Syrup', levels: { '25%': 5, '50%': 8, Regular: 15, Sweet: 20 } },
   'ube-matcha-latte': { unit: 'Condensed Milk', levels: { '25%': 5, '50%': 10, Regular: 15, Sweet: 25 } },
   'strawberry-matcha-latte': { unit: 'Agave Syrup', levels: { '25%': 5, '50%': 8, Regular: 15, Sweet: 20 } },
-  'chocolate-cookies': { unit: 'Syrup', levels: { '25%': 10, '50%': 15, Regular: 20, Sweet: 25 } },
   'matcha-sea-salt': { unit: 'Agave Syrup', levels: { '25%': 5, '50%': 8, Regular: 15, Sweet: 20 } },
   'oreo-cloud-matcha': { unit: 'Condensed Milk', levels: { '25%': 3, '50%': 5, Regular: 8, Sweet: 15 } },
 }
@@ -52,13 +51,6 @@ export const MENU_DRINKS = [
     imgAlt: 'Ube Matcha Latte, purple and green layered drink',
     price: 190,
     badge: 'New',
-  },
-  {
-    key: 'chocolate-cookies',
-    name: 'Chocolate Cookies',
-    img: '/assets/chocolate-cookies.jpg',
-    imgAlt: 'Chocolate Cookies drink topped with cookie crumbs',
-    price: 170,
   },
   {
     key: 'strawberry-matcha-latte',

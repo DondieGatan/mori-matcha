@@ -12,7 +12,7 @@ export default function AboutSection() {
           Mori Matcha began as a home café in Imus, Cavite, built on a simple idea: matcha made properly, whisked
           fresh for every cup, never sitting around pre-made. That same care carries through today — every drink on
           our menu is still built to order, from the classic and clean to creamy ube, bright strawberry, mango, and
-          chocolate cookies.
+          Oreo cloud.
         </p>
       </div>
     </section>
