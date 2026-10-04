@@ -5,12 +5,13 @@ export const SUGAR_DATA = {
   'strawberry-matcha-latte': { unit: 'Agave Syrup', levels: { '25%': 5, '50%': 8, Regular: 15, Sweet: 20 } },
   'chocolate-cookies': { unit: 'Syrup', levels: { '25%': 10, '50%': 15, Regular: 20, Sweet: 25 } },
   'matcha-sea-salt': { unit: 'Agave Syrup', levels: { '25%': 5, '50%': 8, Regular: 15, Sweet: 20 } },
+  'oreo-cloud-matcha': { unit: 'Condensed Milk', levels: { '25%': 3, '50%': 5, Regular: 8, Sweet: 15 } },
 }
 
 export const LEVEL_ORDER = ['25%', '50%', 'Regular', 'Sweet']
 
 export const MILK_SURCHARGE = 20
-export const MILK_OPTIONS = ['Regular Milk', 'Oat Milk', 'Coconut Milk']
+export const MILK_OPTIONS = ['Regular Milk', 'Oat Milk']
 export const MILK_ELIGIBLE_DRINKS = [
   'classic-matcha-latte',
   'ube-matcha-latte',
@@ -71,6 +72,13 @@ export const MENU_DRINKS = [
     img: '/assets/mango-matcha-bliss.jpg',
     imgAlt: 'Mango Matcha Bliss, matcha and mango layered drink topped with mango chunks',
     price: 190,
+  },
+  {
+    key: 'oreo-cloud-matcha',
+    name: 'Oreo Cloud Matcha',
+    img: '/assets/oreo-cloud-matcha.jpg',
+    imgAlt: 'Oreo Cloud Matcha, matcha over creamy milk and cookie crumbs, topped with an Oreo cookie',
+    price: 200,
   },
 ]
 
