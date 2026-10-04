@@ -17,6 +17,7 @@ export const MILK_ELIGIBLE_DRINKS = [
   'strawberry-matcha-latte',
   'matcha-sea-salt',
   'mango-matcha-bliss',
+  'oreo-cloud-matcha',
 ]
 
 // Featured drinks get the larger highlighted card treatment at the top of
