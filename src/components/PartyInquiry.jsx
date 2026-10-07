@@ -3,6 +3,7 @@ import { INSTAGRAM_DM_URL, formatPeso } from '../data/menu'
 import { PARTY_ADDONS, PARTY_EVENT_TYPES, PARTY_PACKAGES, PARTY_VARIETIES } from '../data/partyCart'
 
 const MILK_CHOICES = ['Full Cream', 'Oat Milk']
+const MAX_GUESTS = 500
 const EMPTY = {
   name: '',
   eventType: '',
@@ -37,8 +38,11 @@ export default function PartyInquiry({ pkgKey, onPkgChange }) {
   const [copyLabel, setCopyLabel] = useState('Copy Inquiry')
 
   const pkg = PARTY_PACKAGES.find((p) => p.key === pkgKey) || null
-  const guests = parseInt(form.guests, 10)
-  const guestsValid = Number.isFinite(guests) && guests > 0
+  // Whole numbers only: "1e3", "2.5" and "-5" are rejected instead of being silently misread.
+  const guestsText = form.guests.trim()
+  const guests = /^\d+$/.test(guestsText) ? parseInt(guestsText, 10) : NaN
+  const guestsValid = Number.isInteger(guests) && guests >= 1 && guests <= MAX_GUESTS
+  const today = todayISO()
 
   function set(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -47,7 +51,8 @@ export default function PartyInquiry({ pkgKey, onPkgChange }) {
   const errors = {}
   if (!pkg) errors.pkg = 'Choose a package.'
   if (!form.date) errors.date = 'Pick your event date.'
-  if (!guestsValid) errors.guests = 'Enter how many guests.'
+  else if (form.date < today) errors.date = 'Pick a date from today onward.'
+  if (!guestsValid) errors.guests = guestsText ? 'Enter a whole number from 1 to ' + MAX_GUESTS + '.' : 'Enter how many guests.'
   if (!form.location.trim()) errors.location = 'Tell us where the event will be.'
   const isValid = Object.keys(errors).length === 0
 
@@ -93,9 +98,16 @@ export default function PartyInquiry({ pkgKey, onPkgChange }) {
     }
   }
 
+  function showProblems() {
+    setShowErrors(true)
+    const order = [['pkg', 'pi-pkg'], ['date', 'pi-date'], ['guests', 'pi-guests'], ['location', 'pi-location']]
+    const first = order.find(([key]) => errors[key])
+    if (first) document.getElementById(first[1])?.focus()
+  }
+
   function handleCopy() {
     if (!isValid) {
-      setShowErrors(true)
+      showProblems()
       return
     }
     copyText(message, () => {
@@ -107,7 +119,7 @@ export default function PartyInquiry({ pkgKey, onPkgChange }) {
   function handleSend(e) {
     if (!isValid) {
       e.preventDefault()
-      setShowErrors(true)
+      showProblems()
       return
     }
     // Instagram can't be pre-filled, so copy the message for the customer to paste.
@@ -155,12 +167,12 @@ export default function PartyInquiry({ pkgKey, onPkgChange }) {
           <div className="party-row">
             <div className="party-field">
               <label htmlFor="pi-date">Event date</label>
-              <input id="pi-date" type="date" min={todayISO()} value={form.date} onChange={(e) => set('date', e.target.value)} aria-invalid={showErrors && !!errors.date} />
+              <input id="pi-date" type="date" min={today} max="2100-12-31" value={form.date} onChange={(e) => set('date', e.target.value)} aria-invalid={showErrors && !!errors.date} />
               {err('date')}
             </div>
             <div className="party-field">
               <label htmlFor="pi-guests">Number of guests</label>
-              <input id="pi-guests" type="number" inputMode="numeric" min="1" max="500" placeholder="e.g. 30" value={form.guests} onChange={(e) => set('guests', e.target.value)} aria-invalid={showErrors && !!errors.guests} />
+              <input id="pi-guests" type="number" inputMode="numeric" min="1" max={MAX_GUESTS} step="1" placeholder="e.g. 30" value={form.guests} onChange={(e) => set('guests', e.target.value)} aria-invalid={showErrors && !!errors.guests} />
               {err('guests')}
             </div>
           </div>
@@ -242,7 +254,7 @@ export default function PartyInquiry({ pkgKey, onPkgChange }) {
           </div>
         </form>
 
-        <aside className="party-card party-preview" aria-live="polite">
+        <aside className="party-card party-preview">
           <p className="eyebrow">Your message</p>
           <h3>Ready to send</h3>
           {pkg && (
@@ -259,6 +271,9 @@ export default function PartyInquiry({ pkgKey, onPkgChange }) {
           )}
           <pre className="party-message">{message}</pre>
           {showErrors && !isValid && <p className="party-error party-error-block">Please fill in the package, date, guests and location first.</p>}
+          <span className="sr-only" role="status">
+            {copyLabel !== 'Copy Inquiry' ? 'Inquiry copied to the clipboard.' : ''}
+          </span>
           <div className="party-actions">
             <button type="button" className="btn btn-ghost" onClick={handleCopy}>
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">

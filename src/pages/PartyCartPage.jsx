@@ -33,7 +33,10 @@ export default function PartyCartPage() {
         'Mori Matcha Party Cart — a fresh matcha bar for birthdays, debuts, school events and celebrations. Packages from ₱3,000.',
       )
     }
-    window.scrollTo(0, 0)
+    // The browser tries to jump to a #section before React has drawn it, so do it once the page exists.
+    const target = window.location.hash ? document.getElementById(decodeURIComponent(window.location.hash.slice(1))) : null
+    if (target) target.scrollIntoView()
+    else window.scrollTo(0, 0)
   }, [])
 
   return (

@@ -1958,7 +1958,7 @@ img { max-width: 100%; display: block; }
 .party-card .party-error { color: #a13a33; }
 .party-error-block { margin: 12px 0 0 !important; }
 
-.party-preview { position: sticky; top: 90px; }
+.party-preview { position: sticky; top: 84px; }
 
 @media (max-width: 860px) { .party-preview { position: static; } }
 
@@ -1983,7 +1983,7 @@ img { max-width: 100%; display: block; }
 .party-message {
   margin: 0;
   padding: 16px;
-  max-height: 340px;
+  max-height: 260px;
   overflow: auto;
   white-space: pre-wrap;
   word-break: break-word;
@@ -2017,3 +2017,16 @@ img { max-width: 100%; display: block; }
 button.btn { font-family: inherit; cursor: pointer; }
 button.btn-ghost { background: transparent; }
 button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
+
+/* Visually hidden, still read by screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
