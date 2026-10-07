@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/admin", "destination": "/index.html" },
-    { "source": "/party-cart", "destination": "/index.html" }
+    { "source": "/party-cart", "destination": "/party-cart.html" },
+    { "source": "/party-cart/", "destination": "/party-cart.html" }
   ]
 }

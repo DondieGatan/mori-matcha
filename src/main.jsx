@@ -8,7 +8,7 @@ import './styles/style.css'
 
 const path = window.location.pathname.replace(/\/+$/, '')
 const isAdmin = path === '/admin'
-const isPartyCart = path === '/party-cart'
+const isPartyCart = path === '/party-cart' || path === '/party-cart.html'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
