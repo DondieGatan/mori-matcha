@@ -82,6 +82,7 @@ export default function PartyInquiry({ pkgKey, onPkgChange }) {
     if (form.addons.length) lines.push('Add-ons: ' + form.addons.join(', '))
     if (form.notes.trim()) lines.push('Notes: ' + form.notes.trim())
     lines.push('', 'Could you please confirm availability and the next steps? Thank you!')
+    lines.push('', 'Next steps:', '1. Send your inquiry (this message)', '2. Mori Matcha confirms availability', '3. Pay the 50% deposit to reserve the date')
     return lines.join('\n')
   }, [form, pkg, guests, guestsValid])
 
