@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { INSTAGRAM_DM_URL, formatPeso } from '../data/menu'
 import { PARTY_ADDONS, PARTY_EVENT_TYPES, PARTY_PACKAGES, PARTY_VARIETIES } from '../data/partyCart'
 
-const MILK_CHOICES = ['Full Cream', 'Oat Milk', 'Not sure yet']
+const MILK_CHOICES = ['Full Cream', 'Oat Milk']
 const EMPTY = {
   name: '',
   eventType: '',
