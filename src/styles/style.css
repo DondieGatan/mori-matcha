@@ -1657,9 +1657,10 @@ img { max-width: 100%; display: block; }
 .party-package-meta { color: var(--text-dim); margin: 8px 0 18px; font-size: 0.92rem; }
 
 .party-package-price {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 2.4rem;
+  font-family: 'Jost', sans-serif;
+  font-size: 2.2rem;
   font-weight: 600;
+  letter-spacing: 0.01em;
   color: var(--forest);
   line-height: 1;
   margin: 0;
@@ -1752,3 +1753,23 @@ img { max-width: 100%; display: block; }
 .party-cta-title { max-width: 640px; margin-left: auto; margin-right: auto; }
 
 .party-cta-sub { max-width: 600px; margin-left: auto; margin-right: auto; margin-bottom: 26px; }
+
+/* Small phones: keep the nav compact and the quick-view table fully visible */
+@media (max-width: 420px) {
+  .nav-links { gap: 10px; }
+  .nav-links a { font-size: 0.68rem; letter-spacing: 0.02em; }
+}
+
+@media (max-width: 520px) {
+  .party-table { min-width: 0; }
+  .party-table th,
+  .party-table td { padding: 12px 10px; font-size: 0.85rem; }
+  .party-table thead th { font-size: 0.68rem; letter-spacing: 0.03em; }
+  .party-package-price { font-size: 2rem; }
+}
+
+@media (max-width: 340px) {
+  .party-table th,
+  .party-table td { padding: 10px 6px; font-size: 0.8rem; }
+  .party-table thead th { font-size: 0.62rem; letter-spacing: 0.02em; }
+}
