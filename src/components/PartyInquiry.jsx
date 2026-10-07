@@ -261,9 +261,18 @@ export default function PartyInquiry({ pkgKey, onPkgChange }) {
           {showErrors && !isValid && <p className="party-error party-error-block">Please fill in the package, date, guests and location first.</p>}
           <div className="party-actions">
             <button type="button" className="btn btn-ghost" onClick={handleCopy}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                <rect x="9" y="9" width="11" height="11" rx="2" />
+                <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+              </svg>
               {copyLabel}
             </button>
             <a href={INSTAGRAM_DM_URL} target="_blank" rel="noopener" className="btn btn-primary" onClick={handleSend}>
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="5" />
+                <circle cx="12" cy="12" r="4" />
+                <circle cx="17.5" cy="6.5" r="1" />
+              </svg>
               Send via Instagram
             </a>
           </div>

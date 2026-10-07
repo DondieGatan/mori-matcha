@@ -1997,7 +1997,20 @@ img { max-width: 100%; display: block; }
 }
 
 .party-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-.party-actions .btn { flex: 1 1 150px; }
+
+.party-actions .btn {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 20px;
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.party-actions .btn svg { flex-shrink: 0; }
 .party-preview .party-fine { margin-top: 14px; }
 
 /* Buttons (not links) styled as site buttons */
