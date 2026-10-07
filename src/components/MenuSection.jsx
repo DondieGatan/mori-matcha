@@ -128,6 +128,22 @@ function statusOf(key, unavailableKeys, comingSoonKeys) {
   return 'available'
 }
 
+function PartyTeaser() {
+  const reveal = useReveal(0)
+  return (
+    <div ref={reveal.ref} style={reveal.style} className={reveal.className + ' party-teaser'}>
+      <div>
+        <p className="eyebrow">Hosting an event?</p>
+        <h3>Mori Matcha Party Cart</h3>
+        <p>A fresh matcha bar for birthdays, debuts and school events &mdash; packages from {formatPeso(3000)}.</p>
+      </div>
+      <a href="/party-cart" className="btn btn-primary">
+        View Party Cart
+      </a>
+    </div>
+  )
+}
+
 export default function MenuSection({ onOpenSugarModal, unavailableKeys = [], comingSoonKeys = [] }) {
   const [selectedKey, setSelectedKey] = useState(null)
 
@@ -174,6 +190,8 @@ export default function MenuSection({ onOpenSugarModal, unavailableKeys = [], co
             />
           ))}
         </div>
+
+        <PartyTeaser />
       </div>
     </section>
   )
