@@ -120,10 +120,22 @@ export default function PartyInquiry({ pkgKey, onPkgChange }) {
   return (
     <div className="party-inquiry">
       <ol className="party-steps" aria-label="How it works">
-        <li>Fill in your event details.</li>
-        <li>Tap &quot;Copy Inquiry&quot; (or &quot;Send via Instagram&quot;).</li>
-        <li>Paste it into our Instagram chat and send.</li>
-        <li>We reply to confirm availability and the next steps.</li>
+        <li>
+          <strong>Fill in your details</strong>
+          <span>Pick a package, then add your date, guests and location.</span>
+        </li>
+        <li>
+          <strong>Press &quot;Copy Inquiry&quot;</strong>
+          <span>Your message is copied, ready to paste.</span>
+        </li>
+        <li>
+          <strong>Press &quot;Send via Instagram&quot;</strong>
+          <span>Our chat opens. Paste your message and send it.</span>
+        </li>
+        <li>
+          <strong>We confirm your date</strong>
+          <span>We reply to confirm availability and the 50% deposit details.</span>
+        </li>
       </ol>
 
       <div className="party-inquiry-grid">
