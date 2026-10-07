@@ -40,3 +40,5 @@ export const PARTY_NOTES = [
   'Transportation fees may apply depending on location.',
   'Remaining balance is due before or on the event date.',
 ]
+
+export const PARTY_EVENT_TYPES = ['Birthday', 'Debut', 'School event', 'Intimate celebration', 'Other']

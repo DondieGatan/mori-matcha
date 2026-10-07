@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import BackToTop from '../components/BackToTop'
+import PartyInquiry from '../components/PartyInquiry'
 import { INSTAGRAM_DM_URL, INSTAGRAM_PROFILE_URL, formatPeso } from '../data/menu'
 import { PARTY_ADDONS, PARTY_INCLUDED, PARTY_NOTES, PARTY_PACKAGES, PARTY_VARIETIES } from '../data/partyCart'
 import { useReveal } from '../hooks/useReveal'
@@ -16,6 +17,13 @@ function Reveal({ index = 0, className = '', children }) {
 }
 
 export default function PartyCartPage() {
+  const [pkgKey, setPkgKey] = useState(null)
+
+  function choosePackage(key) {
+    setPkgKey(key)
+    document.getElementById('inquiry')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
   useEffect(() => {
     document.title = 'Party Cart — Mori Matcha'
     const desc = document.querySelector('meta[name="description"]')
@@ -46,6 +54,11 @@ export default function PartyCartPage() {
                 school events, intimate celebrations, and more.
               </p>
             </Reveal>
+            <Reveal index={2}>
+              <a href="#inquiry" className="btn btn-primary party-hero-btn">
+                Build Your Inquiry
+              </a>
+            </Reveal>
           </div>
         </section>
 
@@ -55,13 +68,16 @@ export default function PartyCartPage() {
             <h2 className="section-title center">Party Cart Packages</h2>
             <div className="party-packages">
               {PARTY_PACKAGES.map((pkg, i) => (
-                <Reveal key={pkg.key} index={i} className="party-package">
+                <Reveal key={pkg.key} index={i} className={'party-package' + (pkgKey === pkg.key ? ' is-selected' : '')}>
                   <h3>{pkg.name}</h3>
                   <p className="party-package-meta">
                     {pkg.guests} guests &middot; {pkg.service}
                   </p>
                   <p className="party-package-price">{formatPeso(pkg.price)}</p>
                   <p className="party-package-per">about {formatPeso(pkg.perGuest)} per guest</p>
+                  <button type="button" className={'btn party-choose ' + (pkgKey === pkg.key ? 'btn-primary' : 'btn-ghost')} onClick={() => choosePackage(pkg.key)}>
+                    {pkgKey === pkg.key ? 'Selected ✓' : 'Choose this package'}
+                  </button>
                 </Reveal>
               ))}
             </div>
@@ -150,7 +166,15 @@ export default function PartyCartPage() {
           </div>
         </section>
 
-        <section className="section section-alt contact-section">
+        <section id="inquiry" className="section section-alt">
+          <div className="section-inner">
+            <p className="eyebrow center">Plan Your Event</p>
+            <h2 className="section-title center">Build Your Inquiry</h2>
+            <PartyInquiry pkgKey={pkgKey} onPkgChange={setPkgKey} />
+          </div>
+        </section>
+
+        <section className="section contact-section">
           <Reveal className="section-inner contact-inner">
             <p className="eyebrow center">Book Your Date</p>
             <h2 className="section-title center party-cta-title">Ready to make your celebration a little greener?</h2>
