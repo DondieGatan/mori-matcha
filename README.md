@@ -32,8 +32,9 @@ event inquiry. Nothing is sent unless you press the Instagram button, so it is s
 - **"Ask Mori" customer-service assistant** on every page: a chat panel that answers questions about the menu, prices,
   sweetness and milk options, opening hours (open or closed right now, in Manila time), how to order, payment,
   delivery and the Party Cart. Replies can be **read aloud** (text-to-speech through the browser's built-in voices,
-  with a per-reply Listen button and a voice-replies switch that is off by default). It never takes orders itself; it
-  points customers to the cart and the Instagram step. See "The assistant" below.
+  with a per-reply Listen button and a voice-replies switch that is off by default) and customers can **speak their
+  question** with a microphone button (speech recognition in the browser). It never takes orders itself; it points
+  customers to the cart and the Instagram step. See "The assistant" below.
 - **SEO and PWA**: meta tags, JSON-LD kept in sync with the live opening hours, per-page share previews, an
   installable web app manifest, a sitemap, and Vercel Analytics for production monitoring.
 
@@ -68,6 +69,10 @@ The functions create their tables on first use with idempotent migrations (`CREA
 - **Safe to expose.** Messages are capped at 500 characters and the history at 10 turns, only `user` and `assistant`
   roles are accepted, replies are stripped of markdown, links and emoji, and each client is limited to 30 messages
   per 10 minutes per warm serverless instance (best effort, since instances do not share memory).
+- **Voice input** lives in `src/hooks/useSpeechInput.js`: the browser's `SpeechRecognition` (Chrome, Edge, Safari), set
+  to Philippine English. The microphone button hides where it is unsupported (Firefox), the transcript appears in the
+  box as it is recognised and is sent when the speaker stops, and a question asked by voice is answered aloud even
+  with voice replies off. Chrome and Edge transcribe through their own speech service, so the panel says so.
 - **Text-to-speech** lives in `src/hooks/useSpeech.js`: the browser's `speechSynthesis`, no key and no audio leaves
   the device. It prefers a natural English voice, speaks long replies sentence by sentence, stops when the chat is
   closed or a new question is sent, and remembers the voice-replies choice.
