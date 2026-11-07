@@ -31,7 +31,7 @@ export default function PartyCartPage() {
     if (desc) {
       desc.setAttribute(
         'content',
-        'Mori Matcha Party Cart — a fresh matcha bar for birthdays, debuts, school events and celebrations. Packages from ₱3,000.',
+        'Mori Matcha Party Cart — a fresh matcha bar for birthdays, debuts, school events and celebrations. Packages from ₱3,500.',
       )
     }
     // The browser tries to jump to a #section before React has drawn it, so do it once the page exists.

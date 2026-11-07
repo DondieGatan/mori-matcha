@@ -1,9 +1,9 @@
 // Party Cart packages and terms. Prices are in pesos.
 export const PARTY_PACKAGES = [
-  { key: 'mini', short: 'Mini', name: 'Mini Matcha Cart', guests: 20, service: '1–2 hours of service', price: 3000, perGuest: 150 },
-  { key: 'classic', short: 'Classic', name: 'Classic Matcha Cart', guests: 30, service: '2 hours of service', price: 4200, perGuest: 140 },
-  { key: 'party', short: 'Party', name: 'Matcha Party', guests: 50, service: '2.5 hours of service', price: 6500, perGuest: 130 },
-  { key: 'grand', short: 'Grand', name: 'Grand Matcha Bar', guests: 100, service: '3 hours of service', price: 11500, perGuest: 115 },
+  { key: 'mini', short: 'Mini', name: 'Mini Matcha Cart', guests: 20, service: '1–2 hours of service', price: 3500, perGuest: 175 },
+  { key: 'classic', short: 'Classic', name: 'Classic Matcha Cart', guests: 30, service: '2 hours of service', price: 4500, perGuest: 150 },
+  { key: 'party', short: 'Party', name: 'Matcha Party', guests: 50, service: '2.5 hours of service', price: 7000, perGuest: 140 },
+  { key: 'grand', short: 'Grand', name: 'Grand Matcha Bar', guests: 100, service: '3 hours of service', price: 12500, perGuest: 125 },
 ]
 
 export const PARTY_INCLUDED = [
