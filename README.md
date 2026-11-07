@@ -36,7 +36,7 @@ event inquiry. Nothing is sent unless you press the Instagram button, so it is s
   question** with a microphone button (speech recognition in the browser). It never takes orders itself; it points
   customers to the cart and the Instagram step. See "The assistant" below.
 - **Digital loyalty card**: collect 9 stamps and the 10th drink is free. The card is a private page on the customer's phone
-  (a green card front, and a stamp card where a matcha-bowl stamp is pressed onto a seal for each drink, with the Free seal glowing when it is earned), and
+  (a front with the member's name and card number, and a stamp card where a matcha-bowl stamp is pressed onto a seal for each drink, with the Free seal glowing when it is earned), and
   the café team adds stamps from the admin page. Built so it cannot be cheated; see "The loyalty card" below.
 - **SEO and PWA**: meta tags, JSON-LD kept in sync with the live opening hours, per-page share previews, an
   installable web app manifest, a sitemap, and Vercel Analytics for production monitoring.
