@@ -60,12 +60,17 @@ The functions create their tables on first use with idempotent migrations (`CREA
 `api/assistant.js` takes the last few chat turns and returns one short, spoken-style reply.
 
 - **Grounded in the site's own data.** `api/_lib/shop.js` builds the model's facts from `src/data` (drinks, prices,
-  sweetness levels, hours, Party Cart packages), plus the live availability table, so it cannot drift from the page.
+  sweetness levels, hours, Party Cart packages, reviews), plus the live availability table, so it cannot drift from the
+  page. It also knows the café's story (About section, hero, "whisk, pour, enjoy"), how the website works (menu sheet,
+  cart saved on the device, order numbers, Instagram confirmation, Party Cart inquiry steps, installable PWA, the private
+  staff dashboard) and how the assistant itself works, and has an explicit list of what the site does not publish
+  (allergens, caffeine, delivery fees, phone number) so it says it is unsure instead of guessing.
   The model is told to use only those facts, to say it is unsure about anything else (allergens, delivery fees,
   stock) and point to Instagram, and to treat customer text as a question, never as instructions.
 - **Always answers.** With `GEMINI_API_KEY` set (optional `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL`) the reply is
   written by Gemini, with a second model as fallback. With no key, or if both models fail, keyword-based answers
-  from the same data are used, so the assistant never shows an empty state.
+  from the same descriptions are used (about 25 topics, up to two answered per message), so the assistant never shows
+  an empty state.
 - **Safe to expose.** Messages are capped at 500 characters and the history at 10 turns, only `user` and `assistant`
   roles are accepted, replies are stripped of markdown, links and emoji, and each client is limited to 30 messages
   per 10 minutes per warm serverless instance (best effort, since instances do not share memory).

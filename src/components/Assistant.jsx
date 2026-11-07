@@ -3,8 +3,8 @@ import { INSTAGRAM_DM_URL } from '../data/menu'
 import { useSpeech } from '../hooks/useSpeech'
 import { useSpeechInput } from '../hooks/useSpeechInput'
 
-const GREETING = "Hi, I'm Mori! Ask me about our drinks, prices, opening hours, how to order, or our party carts."
-const SUGGESTIONS = ['What drinks do you have?', 'Are you open now?', 'How do I order?', 'Tell me about party carts']
+const GREETING = "Hi, I'm Mori! Ask me about the café, our drinks and prices, opening hours, how to order, party carts, or how this website works."
+const SUGGESTIONS = ['What is Mori Matcha all about?', 'What drinks do you have?', 'Are you open now?', 'How do I order?', 'How does this website work?']
 const STORAGE_KEY = 'mori-assistant-chat'
 const MAX_CHARS = 500
 
