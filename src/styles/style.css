@@ -69,8 +69,8 @@ img { max-width: 100%; display: block; }
 
 @media (max-width: 640px) {
   .nav-inner { flex-wrap: wrap; row-gap: 10px; justify-content: center; }
-  .nav-links { gap: 14px; flex-wrap: wrap; justify-content: center; }
-  .nav-links a { font-size: 0.75rem; }
+  .nav-links { gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .nav-links a { font-size: 0.75rem; padding: 10px 6px; }
 }
 
 .nav-links a {
@@ -329,7 +329,7 @@ img { max-width: 100%; display: block; }
 /* Menu */
 .featured-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
   gap: 24px;
   margin-bottom: 40px;
 }
@@ -355,6 +355,8 @@ img { max-width: 100%; display: block; }
 }
 
 .featured-img-wrap { position: relative; flex-shrink: 0; overflow: hidden; border-radius: 14px; }
+.featured-text { min-width: 0; }
+@media (max-width: 380px) { .featured-item { gap: 16px; padding: 14px; } .featured-img { width: 104px; height: 140px; } }
 
 .featured-img {
   width: 130px;
@@ -612,6 +614,7 @@ img { max-width: 100%; display: block; }
   font-size: 0.85rem;
   font-weight: 500;
   text-decoration: none;
+  padding: 8px 0;
   border-bottom: 1px solid transparent;
   transition: border-color 0.2s ease;
 }
@@ -744,6 +747,7 @@ img { max-width: 100%; display: block; }
   max-width: 420px;
   width: 100%;
   max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
   overflow: hidden;
   box-shadow: 0 24px 60px rgba(20, 26, 15, 0.35);
   opacity: 0;
@@ -753,6 +757,7 @@ img { max-width: 100%; display: block; }
 
 .sugar-modal-scroll {
   max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - 40px);
   overflow-y: auto;
 }
 
@@ -987,6 +992,7 @@ img { max-width: 100%; display: block; }
   max-width: 460px;
   width: 100%;
   max-height: 82vh;
+  max-height: 82dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1131,6 +1137,7 @@ img { max-width: 100%; display: block; }
   flex-direction: column;
   gap: 10px;
   max-height: 60vh;
+  max-height: 60dvh;
   overflow-y: auto;
 }
 
@@ -1383,8 +1390,8 @@ img { max-width: 100%; display: block; }
 
 .feedback-toggle {
   display: block;
-  margin: 0 0 12px;
-  padding: 0;
+  margin: 0 0 4px;
+  padding: 8px 0;
   border: none;
   background: none;
   color: var(--forest);
@@ -1460,13 +1467,16 @@ img { max-width: 100%; display: block; }
 
 .admin-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 20px;
 }
 
 .admin-header-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -1852,7 +1862,7 @@ img { max-width: 100%; display: block; }
   align-items: start;
 }
 
-@media (max-width: 860px) { .party-inquiry-grid { grid-template-columns: 1fr; } }
+@media (max-width: 860px) { .party-inquiry-grid { grid-template-columns: minmax(0, 1fr); } }
 
 .party-form { display: flex; flex-direction: column; gap: 18px; padding: 28px; }
 
@@ -2338,19 +2348,37 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
 }
 
 /* ---------- Loyalty card ---------- */
-.loyalty-cards { display: flex; flex-direction: column; gap: 18px; max-width: 540px; margin: 28px auto 0; }
+/* Built with plain, long-supported CSS on purpose (a padding-based ratio box, no flex column, no container query units) so it
+   keeps its shape on every phone, including older iPhones. Text is sized from --u, one hundredth of the card's width, which
+   the page measures and sets (the value here is only a first guess before that happens). */
+.loyalty-cards { max-width: 540px; margin: 28px auto 0; }
+.loyalty-cards > * + * { margin-top: 18px; }
 
-.loyalty-front {
+.loyalty-front,
+.loyalty-sheet {
+  --u: min(5.4px, calc((100vw - 48px) / 100));
   position: relative;
-  aspect-ratio: 1280 / 908;
+  display: block;
+  width: 100%;
+  height: 0;
+  padding-bottom: 70.9375%; /* 908 / 1280: the shape of the artwork */
   overflow: hidden;
   border-radius: 20px;
   background: #d9e8c2;
-  box-shadow: 0 18px 40px rgba(28, 43, 31, 0.2);
-  container-type: inline-size;
+  isolation: isolate;
+  -webkit-mask-image: -webkit-radial-gradient(white, black); /* keeps the rounded corners while the stamps animate in Safari */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   -webkit-user-select: none;
   user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
+
+.loyalty-front { box-shadow: 0 18px 40px rgba(28, 43, 31, 0.2); }
+.loyalty-sheet { box-shadow: 0 14px 34px rgba(45, 68, 51, 0.18); }
+
+.loyalty-sheet-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; pointer-events: none; -webkit-touch-callout: none; }
 
 /* Name and card number on a soft frosted strip, so they read clearly on the picture */
 .loyalty-front-bar {
@@ -2361,10 +2389,9 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 3cqw;
-  padding: 2.2cqw 3.2cqw;
+  padding: calc(var(--u) * 2.2) calc(var(--u) * 3.2);
   border: 1px solid rgba(255, 255, 255, 0.65);
-  border-radius: 3.4cqw;
+  border-radius: calc(var(--u) * 3.4);
   background: rgba(247, 251, 240, 0.8);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
@@ -2372,58 +2399,48 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
   box-shadow: 0 6px 18px rgba(28, 43, 31, 0.12);
 }
 
-.loyalty-front-bar small { display: block; font-size: 1.55cqw; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.7; }
-.loyalty-front-who { min-width: 0; flex: 1; }
-.loyalty-front-who span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Cormorant Garamond', serif; font-size: 4.2cqw; font-weight: 600; line-height: 1.15; }
-.loyalty-front-id { text-align: right; flex: none; }
-.loyalty-front-id span { display: block; font-size: 3.3cqw; font-weight: 500; letter-spacing: 0.14em; font-variant-numeric: tabular-nums; line-height: 1.3; }
+.loyalty-front-bar small { display: block; font-size: max(7px, calc(var(--u) * 1.7)); letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.75; }
+.loyalty-front-who { min-width: 0; flex: 1 1 auto; }
+.loyalty-front-who span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'Cormorant Garamond', serif; font-size: max(11px, calc(var(--u) * 4.2)); font-weight: 600; line-height: 1.15; }
+.loyalty-front-id { text-align: right; flex: 0 0 auto; margin-left: calc(var(--u) * 3); }
+.loyalty-front-id span { display: block; font-size: max(10px, calc(var(--u) * 3.3)); font-weight: 500; letter-spacing: 0.14em; font-variant-numeric: tabular-nums; line-height: 1.3; }
 
 .loyalty-back { margin: 0; }
 
 /* The stamp card artwork, with the stamps pressed onto its ten seals */
-.loyalty-sheet {
-  position: relative;
-  aspect-ratio: 1280 / 908;
-  overflow: hidden;
-  border-radius: 20px;
-  background: #d9e8c2;
-  box-shadow: 0 14px 34px rgba(45, 68, 51, 0.18);
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.loyalty-sheet-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
-.loyalty-sheet { container-type: inline-size; }
 .loyalty-sheet-caption {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 87.2%;
+  left: 5%;
+  right: 5%;
+  top: 86.4%;
   margin: 0;
   text-align: center;
-  white-space: nowrap;
   font-family: 'Jost', sans-serif;
   font-size: 11px;
-  font-size: 2.7cqw;
+  font-size: max(9px, calc(var(--u) * 2.7));
   font-weight: 500;
-  line-height: 1.3;
+  line-height: 1.25;
   color: #6a1a10;
   pointer-events: none;
 }
-.loyalty-slots { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
-.loyalty-slot { position: absolute; aspect-ratio: 1; touch-action: manipulation; }
+
+.loyalty-slots { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0; list-style: none; }
+.loyalty-slot { position: absolute; height: 0; padding-bottom: 14.0625%; /* a square, as wide as the seal (180 / 1280) */ touch-action: manipulation; }
 .loyalty-slot.is-filled { cursor: pointer; }
 
 /* The stamp image is larger than the seal so it covers it; its bowl is centred on the seal. */
-.loyalty-stamp { position: absolute; left: -5.86%; top: -6.27%; width: 129.05%; aspect-ratio: 521 / 449; pointer-events: none; }
+.loyalty-stamp { position: absolute; left: -5.86%; top: -6.27%; width: 129.05%; height: 0; padding-bottom: 111.22%; /* 449 / 521 of its width */ pointer-events: none; }
 .loyalty-stamp img {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: block;
   width: 100%;
   height: 100%;
   transform-origin: 43.28% 50.6%;
   transform: rotate(var(--tilt, 0deg));
   filter: drop-shadow(0 2px 3px rgba(28, 43, 31, 0.35));
+  -webkit-touch-callout: none;
 }
 
 .loyalty-stamp.is-fresh img { animation: loyalty-stamp-down 0.85s cubic-bezier(0.3, 0.7, 0.3, 1) var(--delay, 0ms) both; }
@@ -2439,7 +2456,7 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
 }
 
 /* A ring of ink that spreads out from the seal at the moment of impact */
-.loyalty-ink { position: absolute; inset: 2%; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.9); box-shadow: 0 0 14px rgba(120, 160, 60, 0.7); pointer-events: none; opacity: 0; }
+.loyalty-ink { position: absolute; top: 2%; left: 2%; right: 2%; bottom: 2%; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.9); box-shadow: 0 0 14px rgba(120, 160, 60, 0.7); pointer-events: none; opacity: 0; }
 .loyalty-ink.is-fresh { animation: loyalty-ink 0.85s ease-out var(--delay, 0ms) both; }
 
 @keyframes loyalty-ink {
@@ -2452,7 +2469,10 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
 .loyalty-slot-free.is-ready::before {
   content: '';
   position: absolute;
-  inset: -5%;
+  top: -5%;
+  left: -5%;
+  right: -5%;
+  bottom: -5%;
   border-radius: 50%;
   border: 3px solid #f1c94d;
   box-shadow: 0 0 18px rgba(241, 201, 77, 0.85);
@@ -2539,4 +2559,13 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
 @media (max-width: 780px) {
   .admin-loyalty-detail-grid { grid-template-columns: 1fr; }
   .admin-loyalty-detail-card { max-width: 420px; }
+}
+
+/* iPhone Safari zooms the whole page whenever a text field under 16px is tapped, which leaves the layout looking squished. */
+@media (max-width: 900px), (hover: none) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px !important; /* beats the per-form sizes above; this only matters on touch screens */
+  }
 }

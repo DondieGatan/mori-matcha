@@ -53,7 +53,7 @@ function formatWhen(iso) {
 }
 
 export default function CardPage() {
-  const [token] = useState(() => tokenFromUrl() || readStore(TOKEN_KEY))
+  const [token, setToken] = useState(() => tokenFromUrl() || readStore(TOKEN_KEY))
   const [state, setState] = useState(token ? 'loading' : 'none') // loading | ready | notfound | busy | error | none
   const [card, setCard] = useState(null)
   const [freshFrom, setFreshFrom] = useState(null)
@@ -119,6 +119,21 @@ export default function CardPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  // Opening a different card link while this page is already open (for example from a message) switches to that card.
+  useEffect(() => {
+    const onHash = () => {
+      const next = tokenFromUrl()
+      if (next && next !== token) {
+        lastBalance.current = null
+        setFreshFrom(null)
+        setCard(null)
+        setToken(next)
+      }
+    }
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [token])
 
   // New stamps appear without a reload when the customer comes back to the tab.
   useEffect(() => {

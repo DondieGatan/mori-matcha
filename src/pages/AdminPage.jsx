@@ -273,6 +273,7 @@ export default function AdminPage() {
                 <span>{drink.name}</span>
                 <select
                   className="admin-status-select"
+                  aria-label={`Availability of ${drink.name}`}
                   value={status}
                   onChange={(e) => handleAvailabilityChange(drink.key, e.target.value)}
                 >
@@ -356,6 +357,7 @@ export default function AdminPage() {
                   <td>
                     <select
                       className="admin-status-select"
+                      aria-label={`Status of order ${order.order_number}`}
                       value={order.status}
                       onChange={(e) => handleStatusChange(order.order_number, e.target.value)}
                     >
@@ -369,6 +371,7 @@ export default function AdminPage() {
                   <td>
                     <select
                       className="admin-status-select"
+                      aria-label={`Payment method of order ${order.order_number}`}
                       value={order.payment_method || ''}
                       onChange={(e) => handlePaymentMethodChange(order.order_number, e.target.value)}
                     >
