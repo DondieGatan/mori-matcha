@@ -7,7 +7,8 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-P6J4NHPHDN');
+  // Report the page address without the #fragment: a loyalty card link keeps its secret there.
+  gtag('config', 'G-P6J4NHPHDN', { page_location: location.origin + location.pathname + location.search });
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">

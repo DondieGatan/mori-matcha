@@ -35,6 +35,9 @@ event inquiry. Nothing is sent unless you press the Instagram button, so it is s
   with a per-reply Listen button and a voice-replies switch that is off by default) and customers can **speak their
   question** with a microphone button (speech recognition in the browser). It never takes orders itself; it points
   customers to the cart and the Instagram step. See "The assistant" below.
+- **Digital loyalty card**: collect 9 stamps and the 10th drink is free. The card is a private page on the customer's phone
+  (a green card front, a stamp card with a leaf seal per drink, and a free-drink slot that lights up when it is earned), and
+  the café team adds stamps from the admin page. Built so it cannot be cheated; see "The loyalty card" below.
 - **SEO and PWA**: meta tags, JSON-LD kept in sync with the live opening hours, per-page share previews, an
   installable web app manifest, a sitemap, and Vercel Analytics for production monitoring.
 
@@ -47,6 +50,7 @@ Browser (React 19 + Vite, two HTML entries: index.html and party-cart.html)
    ├── /api/orders/:number  PATCH status/payment or restore, DELETE to trash or purge (admin key)
    ├── /api/availability    GET per-drink status (public)   PATCH (admin key)
    ├── /api/reviews         Google Places reviews (server-side key)
+   ├── /api/loyalty         POST: a customer views their card (secret link); staff stamp, redeem, void (admin key)
    └── /api/assistant       POST: customer-service chat (Gemini, with a rule-based fallback)
           │
           └── Vercel serverless functions (Node) ── Neon Postgres (orders, availability)
@@ -82,11 +86,34 @@ The functions create their tables on first use with idempotent migrations (`CREA
   the device. It prefers a natural English voice, speaks long replies sentence by sentence, stops when the chat is
   closed or a new question is sent, and remembers the voice-replies choice.
 
+## The loyalty card
+
+The idea is a paper stamp card, made digital, and the rule that keeps it honest is simple: **the browser is never trusted.**
+Stamps exist only on the server and can only be added by staff with the admin key, so there is nothing on a customer's
+phone to edit. The rules (9 stamps, the 10th drink free) live in `src/data/loyalty.js`; change `CARD_SLOTS` to change the card.
+
+- **A card** is a row with a short card number (`LC-7K3Q`) and a secret link, `/card#<22 random characters>` (128 bits).
+  Only a SHA-256 hash of the secret is stored, so a database leak does not leak links. The secret sits after the `#`, which
+  browsers never send to a server, to other sites in the `Referer` header, or to analytics (the analytics calls strip it too).
+  The page is `noindex` and `no-referrer`, and the API takes the secret in a POST body so it never lands in a log or a URL.
+- **A stamp** needs an order the café has marked **paid**, is added by staff from the admin page, and an order can be stamped
+  **once, ever** (a unique index, so even two simultaneous requests award one). An order earns one stamp per drink, never more
+  than it paid for at the cheapest drink and never more than one card's worth, so a fake order claiming 8 drinks for ₱160 earns 1.
+- **A reward** is taken in the same SQL statement that checks the balance, so a double click or two staff phones cannot take two,
+  and a second redemption within 10 seconds is refused.
+- **Everything is a ledger row** (who, when, which order). Mistakes are undone with a reversing "void" entry, never an edit,
+  and a voided stamp cannot be re-earned for the same order. The balance can never go below zero (a database rule).
+- **Guessing and brute force**: wrong admin keys are rate limited and compared in constant time; link lookups are rate limited
+  (best effort per serverless instance); every malformed or unknown link looks the same, "not found".
+
+`npm test` runs `tests/loyalty.test.mjs`: 31 tests against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
+double stamping, racing requests, replayed redemptions, guessed or replaced links, injection, editing history).
+
 ## Structure
 
 ```
 index.html, party-cart.html   Vite entries (head meta, JSON-LD, #root)
-api/                          Vercel serverless functions (orders, availability, reviews, shared auth)
+api/                          Vercel serverless functions (orders, availability, reviews, assistant, loyalty, shared auth and db)
 src/
   main.jsx                    routes: /, /admin, /party-cart
   App.jsx                     home page layout and top-level state

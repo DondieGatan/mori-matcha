@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { FEATURED_DRINKS, MENU_DRINKS, formatPeso } from '../data/menu'
+import AdminLoyalty from '../components/AdminLoyalty'
 
 const ADMIN_KEY_STORAGE = 'mori-matcha-admin-key'
 const STATUSES = ['pending', 'paid', 'shipped']
@@ -288,9 +289,13 @@ export default function AdminPage() {
       </div>
 
       <div className="admin-header">
-        <h1>Mori Matcha — {view === 'trash' ? 'Trash' : 'Orders'}</h1>
+        <h1>Mori Matcha — {view === 'trash' ? 'Trash' : view === 'loyalty' ? 'Loyalty cards' : 'Orders'}</h1>
         <div className="admin-header-actions">
-          {view === 'orders' ? (
+          {view === 'loyalty' ? (
+            <button type="button" className="btn btn-ghost" onClick={() => setView('orders')}>
+              Back to Orders
+            </button>
+          ) : view === 'orders' ? (
             <>
               <button
                 type="button"
@@ -302,6 +307,9 @@ export default function AdminPage() {
               </button>
               <button type="button" className="btn btn-ghost" onClick={() => loadOrders(adminKey)} disabled={loading}>
                 {loading ? 'Refreshing…' : 'Refresh'}
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setView('loyalty')}>
+                Loyalty cards
               </button>
               <button type="button" className="btn btn-ghost" onClick={handleViewTrash}>
                 Trash
@@ -320,6 +328,8 @@ export default function AdminPage() {
         </div>
       </div>
       {error && <p className="admin-error">{error}</p>}
+
+      {view === 'loyalty' && <AdminLoyalty adminKey={adminKey} />}
 
       {view === 'orders' && orders && orders.length === 0 && <p>No orders yet.</p>}
       {view === 'orders' && orders && orders.length > 0 && (
