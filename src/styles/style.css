@@ -2362,52 +2362,77 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
 .loyalty-front-foot span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .loyalty-front-foot span:last-child { font-variant-numeric: tabular-nums; letter-spacing: 0.14em; }
 
-.loyalty-back {
-  padding: 22px 20px 18px;
-  border: 1px solid var(--border);
+.loyalty-back { margin: 0; }
+
+/* The stamp card artwork, with the stamps pressed onto its ten seals */
+.loyalty-sheet {
+  position: relative;
+  aspect-ratio: 1280 / 908;
+  overflow: hidden;
   border-radius: 20px;
-  background: var(--cream-soft);
-  box-shadow: 0 14px 34px rgba(45, 68, 51, 0.14);
+  background: #d9e8c2;
+  box-shadow: 0 14px 34px rgba(45, 68, 51, 0.18);
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.loyalty-back-title { margin: 0 0 16px; font-family: 'Cormorant Garamond', serif; font-size: clamp(1.25rem, 5vw, 1.6rem); line-height: 1.2; color: var(--forest); }
-.loyalty-slots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 0; padding: 0; list-style: none; }
-.loyalty-slot { position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; }
-.loyalty-slot svg { width: 100%; height: 100%; }
-.loyalty-empty { color: #b9ad8a; }
-.loyalty-seal { filter: drop-shadow(0 2px 3px rgba(28, 43, 31, 0.3)); }
-.loyalty-seal.is-fresh { animation: loyalty-stamp 0.55s cubic-bezier(0.2, 1.2, 0.4, 1) both; }
+.loyalty-sheet-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.loyalty-slots { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; }
+.loyalty-slot { position: absolute; aspect-ratio: 1; touch-action: manipulation; }
+.loyalty-slot.is-filled { cursor: pointer; }
 
-@keyframes loyalty-stamp {
-  0% { opacity: 0; transform: scale(2.2) rotate(-24deg); }
-  70% { opacity: 1; transform: scale(0.92); }
-  100% { opacity: 1; }
+/* The stamp image is larger than the seal so it covers it; its bowl is centred on the seal. */
+.loyalty-stamp { position: absolute; left: -5.86%; top: -6.27%; width: 129.05%; aspect-ratio: 521 / 449; pointer-events: none; }
+.loyalty-stamp img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: 43.28% 50.6%;
+  transform: rotate(var(--tilt, 0deg));
+  filter: drop-shadow(0 2px 3px rgba(28, 43, 31, 0.35));
 }
 
-.loyalty-slot-free { color: var(--forest); }
-.loyalty-free { position: relative; width: 78%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0.55; filter: grayscale(0.5); transition: opacity 0.3s ease; }
-.loyalty-free svg { height: 78%; width: auto; }
-.loyalty-free-flag {
+.loyalty-stamp.is-fresh img { animation: loyalty-stamp-down 0.85s cubic-bezier(0.3, 0.7, 0.3, 1) var(--delay, 0ms) both; }
+
+/* Held up high and blurry, slammed down onto the seal, a little squash, then it settles. */
+@keyframes loyalty-stamp-down {
+  0% { opacity: 0; transform: translateY(-38%) scale(2.2) rotate(calc(var(--tilt) - 24deg)); filter: drop-shadow(0 28px 16px rgba(28, 43, 31, 0.22)); }
+  20% { opacity: 1; }
+  52% { opacity: 1; transform: translateY(0) scale(0.88) rotate(var(--tilt)); filter: drop-shadow(0 1px 1px rgba(28, 43, 31, 0.5)); }
+  70% { transform: scale(1.08) rotate(var(--tilt)); }
+  86% { transform: scale(0.975) rotate(var(--tilt)); }
+  100% { opacity: 1; transform: scale(1) rotate(var(--tilt)); filter: drop-shadow(0 2px 3px rgba(28, 43, 31, 0.35)); }
+}
+
+/* A ring of ink that spreads out from the seal at the moment of impact */
+.loyalty-ink { position: absolute; inset: 2%; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.9); box-shadow: 0 0 14px rgba(120, 160, 60, 0.7); pointer-events: none; opacity: 0; }
+.loyalty-ink.is-fresh { animation: loyalty-ink 0.85s ease-out var(--delay, 0ms) both; }
+
+@keyframes loyalty-ink {
+  0%, 50% { opacity: 0; transform: scale(0.85); }
+  54% { opacity: 0.9; transform: scale(0.95); }
+  100% { opacity: 0; transform: scale(1.75); }
+}
+
+/* When a free drink is ready, the Free seal glows */
+.loyalty-slot-free.is-ready::before {
+  content: '';
   position: absolute;
-  bottom: 2%;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: var(--forest);
-  color: var(--cream-soft);
-  font-size: 0.62rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  inset: -5%;
+  border-radius: 50%;
+  border: 3px solid #f1c94d;
+  box-shadow: 0 0 18px rgba(241, 201, 77, 0.85);
+  pointer-events: none;
+  animation: loyalty-ready 1.7s ease-in-out infinite;
 }
 
-.loyalty-free.is-ready { opacity: 1; filter: none; animation: loyalty-glow 1.8s ease-in-out infinite; }
-.loyalty-free.is-ready .loyalty-free-flag { background: #b8862b; }
-
-@keyframes loyalty-glow {
-  0%, 100% { filter: drop-shadow(0 0 0 rgba(184, 134, 43, 0)); transform: scale(1); }
-  50% { filter: drop-shadow(0 0 9px rgba(184, 134, 43, 0.75)); transform: scale(1.05); }
+@keyframes loyalty-ready {
+  0%, 100% { transform: scale(1); opacity: 0.85; box-shadow: 0 0 10px rgba(241, 201, 77, 0.6); }
+  50% { transform: scale(1.09); opacity: 1; box-shadow: 0 0 28px rgba(241, 201, 77, 1); }
 }
 
-.loyalty-back-fine { margin: 14px 0 0; font-size: 0.76rem; color: var(--text-dim); text-align: center; }
+.loyalty-back-fine { margin: 14px 0 0; font-size: 0.76rem; color: var(--text-dim); text-align: center; line-height: 1.5; }
 
 .loyalty-inner { max-width: 640px; }
 .loyalty-note { color: var(--text-dim); font-size: 0.9rem; line-height: 1.6; }
@@ -2441,14 +2466,13 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
 @media (max-width: 780px) {
   .loyalty-promo { grid-template-columns: 1fr; gap: 28px; }
   .loyalty-promo-art { transform: none; }
-  .loyalty-slots { gap: 6px; }
-  .loyalty-back { padding: 18px 14px 14px; }
+  .loyalty-sheet { border-radius: 14px; }
 }
 
 .footer a { text-decoration: underline; text-underline-offset: 3px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .loyalty-seal.is-fresh, .loyalty-free.is-ready { animation: none; }
+  .loyalty-stamp.is-fresh img, .loyalty-ink.is-fresh, .loyalty-slot-free.is-ready::before { animation: none; }
 }
 
 /* Loyalty tab on the staff page */
@@ -2472,3 +2496,14 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
 .admin-loyalty-ledger time { color: var(--text-dim); font-size: 0.78rem; white-space: nowrap; }
 .admin-small { padding: 4px 12px; font-size: 0.8rem; }
 .is-disabled td { opacity: 0.55; }
+
+/* The stamp card inside an opened card on the staff page */
+.admin-loyalty-detail-grid { display: grid; grid-template-columns: minmax(260px, 400px) 1fr; gap: 22px; align-items: start; }
+.admin-loyalty-detail-card .loyalty-sheet { box-shadow: 0 8px 22px rgba(45, 68, 51, 0.16); }
+.admin-loyalty-detail-card .loyalty-back-fine { font-size: 0.72rem; }
+.admin-loyalty-detail-main { min-width: 0; }
+
+@media (max-width: 780px) {
+  .admin-loyalty-detail-grid { grid-template-columns: 1fr; }
+  .admin-loyalty-detail-card { max-width: 420px; }
+}

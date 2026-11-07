@@ -32,7 +32,7 @@ export default function LoyaltySection() {
           </div>
         </div>
         <div ref={art.ref} style={art.style} className={art.className + ' loyalty-promo-art'} aria-hidden="true">
-          <LoyaltyCardBack balance={4} />
+          <LoyaltyCardBack balance={4} autoplay />
           <p className="loyalty-example">Example card</p>
         </div>
       </div>
