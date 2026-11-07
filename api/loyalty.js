@@ -71,6 +71,10 @@ export default async function handler(req, res) {
         return send(res, await loyalty.voidEntry(sql, body))
       case 'regenerate':
         return send(res, await loyalty.regenerateLink(sql, body))
+      case 'link':
+        return send(res, await loyalty.cardLink(sql, body))
+      case 'edit':
+        return send(res, await loyalty.editCard(sql, body))
       case 'disable':
         return send(res, await loyalty.setCardDisabled(sql, { cardNumber: body.cardNumber, disabled: true }))
       case 'enable':

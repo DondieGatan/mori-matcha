@@ -5,6 +5,7 @@ import test, { beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { PGlite } from '@electric-sql/pglite'
 import handler, { _resetLimits } from '../api/loyalty.js'
+import { sealToken, openToken } from '../api/_lib/loyalty.js'
 import { setSqlForTests } from '../api/_lib/db.js'
 import { isAuthorized } from '../api/_lib/auth.js'
 import { STAMPS_PER_REWARD, CARD_SLOTS, stampsForOrder, CHEAPEST_DRINK_PRICE, MAX_STAMPS_PER_ORDER } from '../src/data/loyalty.js'
@@ -86,11 +87,12 @@ test('a new card starts empty and its secret link works', async () => {
   assert.equal(v.body.card.cardNumber, number)
 })
 
-test('only a hash of the link is stored, never the link itself', async () => {
+test('the database never holds the link itself: a one-way hash, plus a copy only the admin key can open', async () => {
   const { token } = await newCard()
-  const { rows } = await db.query(`SELECT token_hash FROM loyalty_cards`)
+  const { rows } = await db.query(`SELECT token_hash, token_enc FROM loyalty_cards`)
   assert.notEqual(rows[0].token_hash, token)
   assert.equal(rows[0].token_hash.length, 64)
+  assert.match(rows[0].token_enc, /^v1\./)
   assert.ok(!JSON.stringify((await db.query(`SELECT * FROM loyalty_cards`)).rows).includes(token))
 })
 
@@ -146,6 +148,7 @@ test('every staff action is refused without the admin key', async () => {
     { action: 'create', label: 'x' }, { action: 'search', q: '' }, { action: 'eligible' }, { action: 'ledger', cardNumber: number },
     { action: 'stamp', cardNumber: number, orderNumber: 'MM-1' }, { action: 'redeem', cardNumber: number },
     { action: 'void', entryId: 1 }, { action: 'regenerate', cardNumber: number }, { action: 'disable', cardNumber: number },
+    { action: 'link', cardNumber: number }, { action: 'edit', cardNumber: number, label: 'Hacked' },
   ]) {
     // a different caller address each time, so the lockout (tested separately) does not get in the way
     const ip = () => '10.' + Math.floor(Math.random() * 250) + '.' + Math.floor(Math.random() * 250) + '.' + Math.floor(Math.random() * 250)
@@ -387,4 +390,176 @@ test('unknown actions and non-object bodies are rejected without a crash', async
   assert.equal((await call(null)).code, 400)
   assert.equal((await call('a string')).code, 400)
   assert.equal((await call([1, 2])).code, 400)
+})
+
+// ---- seeing the link again, and fixing a name or number ---------------------------------------------------------------
+test('staff can see a card\'s link again, and it opens that customer\'s card', async () => {
+  const { number, token } = await newCard('Maria')
+  const r = await call({ action: 'link', cardNumber: number })
+  assert.equal(r.code, 200)
+  assert.equal(r.body.token, token)
+  assert.equal((await call({ action: 'view', token: r.body.token }, { key: null })).body.card.label, 'Maria')
+})
+
+test('a customer with only their own link cannot read links, and the number alone gets nothing', async () => {
+  const { number, token } = await newCard()
+  const other = await newCard('Other')
+  assert.equal((await call({ action: 'link', cardNumber: other.number, token }, { key: null })).code, 401)
+  assert.equal((await call({ action: 'link', cardNumber: number }, { key: 'wrong-key' })).code, 401)
+  const bad = await call({ action: 'link', cardNumber: "LC-AAAA' OR 1=1" })
+  assert.equal(bad.code, 400)
+  assert.equal((await call({ action: 'link', cardNumber: 'LC-ZZZZ' })).code, 404)
+})
+
+test('a new link replaces the saved one, so staff always see the working link', async () => {
+  const { number, token } = await newCard()
+  const fresh = (await call({ action: 'regenerate', cardNumber: number })).body.token
+  const r = await call({ action: 'link', cardNumber: number })
+  assert.equal(r.body.token, fresh)
+  assert.notEqual(r.body.token, token)
+  assert.equal((await call({ action: 'view', token }, { key: null })).code, 404)
+})
+
+test('cards made before links were saved say so instead of showing nothing or crashing', async () => {
+  const { number } = await newCard()
+  await db.query(`UPDATE loyalty_cards SET token_enc = NULL`)
+  const r = await call({ action: 'link', cardNumber: number })
+  assert.equal(r.code, 200)
+  assert.equal(r.body.token, null)
+  assert.equal(r.body.reason, 'not-saved')
+})
+
+test('a saved link that was tampered with, moved to another card, or sealed with another key is reported unreadable', async () => {
+  const a = await newCard('A')
+  const b = await newCard('B')
+  const encA = (await db.query(`SELECT token_enc FROM loyalty_cards WHERE card_number = $1`, [a.number])).rows[0].token_enc
+  // 1) flipped bytes
+  const parts = encA.split('.')
+  const mangled = [parts[0], parts[1], parts[2], 'AAAA' + parts[3].slice(4)].join('.')
+  await db.query(`UPDATE loyalty_cards SET token_enc = $1 WHERE card_number = $2`, [mangled, a.number])
+  assert.equal((await call({ action: 'link', cardNumber: a.number })).body.reason, 'unreadable')
+  // 2) A's sealed link copied onto B: it opens, but it is not B's link, so it is refused
+  await db.query(`UPDATE loyalty_cards SET token_enc = $1 WHERE card_number = $2`, [encA, b.number])
+  assert.equal((await call({ action: 'link', cardNumber: b.number })).body.reason, 'unreadable')
+  // 3) the admin key was changed after the link was saved
+  const keep = process.env.ADMIN_KEY
+  try {
+    process.env.ADMIN_KEY = 'a-completely-different-key'
+    assert.equal(openToken(encA), null)
+  } finally {
+    process.env.ADMIN_KEY = keep
+  }
+})
+
+test('sealing a link round-trips, differs every time, and saves nothing when no admin key is set', () => {
+  const t = 'AbCdEfGhIjKlMnOpQrStUv'
+  const one = sealToken(t)
+  const two = sealToken(t)
+  assert.notEqual(one, two)
+  assert.ok(!one.includes(t))
+  assert.equal(openToken(one), t)
+  assert.equal(openToken('garbage'), null)
+  assert.equal(openToken(null), null)
+  assert.equal(openToken('v1.a.b.c'), null)
+  const keep = process.env.ADMIN_KEY
+  try {
+    process.env.ADMIN_KEY = ''
+    assert.equal(sealToken(t), null)
+    assert.equal(openToken(one), null)
+  } finally {
+    process.env.ADMIN_KEY = keep
+  }
+})
+
+test('fixing the name keeps the stamps, history and link, and is recorded', async () => {
+  const { number, token } = await newCard('@jad')
+  await fill(number, 3)
+  const r = await call({ action: 'edit', cardNumber: number, label: '  @jade ', staff: 'Ana' })
+  assert.equal(r.code, 200)
+  assert.equal(r.body.changed, true)
+  assert.equal(r.body.card.label, '@jade')
+  const v = await call({ action: 'view', token }, { key: null })
+  assert.equal(v.body.card.label, '@jade')
+  assert.equal(v.body.card.balance, 3)
+  assert.equal(v.body.card.history.length, 3)
+  assert.equal((await call({ action: 'link', cardNumber: number })).body.token, token)
+  const l = await call({ action: 'ledger', cardNumber: number })
+  assert.equal(l.body.entries.length, 3)
+  assert.equal(l.body.edits.length, 1)
+  assert.deepEqual({ field: l.body.edits[0].field, old: l.body.edits[0].old_value, now: l.body.edits[0].new_value, staff: l.body.edits[0].staff },
+    { field: 'name', old: '@jad', now: '@jade', staff: 'Ana' })
+})
+
+test('fixing the card number moves everything to the new number and retires the old one', async () => {
+  const { number, token } = await newCard('Maria')
+  await fill(number, 2)
+  const r = await call({ action: 'edit', cardNumber: number, newCardNumber: ' lc-7k3q ', staff: 'Ana' })
+  assert.equal(r.code, 200)
+  assert.equal(r.body.card.cardNumber, 'LC-7K3Q')
+  assert.equal(r.body.card.balance, 2)
+  const v = await call({ action: 'view', token }, { key: null })
+  assert.equal(v.body.card.cardNumber, 'LC-7K3Q')
+  assert.equal(v.body.card.balance, 2)
+  assert.equal((await call({ action: 'link', cardNumber: 'LC-7K3Q' })).body.token, token)
+  await addOrder('MM-AFTER')
+  assert.equal((await stamp(number, 'MM-AFTER')).code, 404, 'the old number no longer works')
+  assert.equal((await stamp('LC-7K3Q', 'MM-AFTER')).code, 200)
+  assert.equal(await balance('LC-7K3Q'), 3)
+  const l = await call({ action: 'ledger', cardNumber: 'LC-7K3Q' })
+  assert.equal(l.body.edits[0].field, 'number')
+  assert.equal(l.body.edits[0].old_value, number)
+  assert.equal(l.body.edits[0].new_value, 'LC-7K3Q')
+})
+
+test('changing name and number together records both', async () => {
+  const { number } = await newCard('x')
+  const r = await call({ action: 'edit', cardNumber: number, label: 'Maria Santos', newCardNumber: 'LC-2222', staff: 'Ben' })
+  assert.equal(r.code, 200)
+  const l = await call({ action: 'ledger', cardNumber: 'LC-2222' })
+  assert.deepEqual(l.body.edits.map((e) => e.field).sort(), ['name', 'number'])
+})
+
+test('a mistyped number is rejected, and so is a number another card already has', async () => {
+  const a = await newCard('A')
+  const b = await newCard('B')
+  for (const bad of ['LC-ABCO', 'LC-AB1C', 'LC-123', 'XX-ABCD', 'LC-ABCDE', 'lc7k3q', "LC-AAAA' OR 1=1", '<script>']) {
+    const r = await call({ action: 'edit', cardNumber: a.number, newCardNumber: bad })
+    assert.equal(r.code, 400, 'number: ' + bad)
+  }
+  const dup = await call({ action: 'edit', cardNumber: a.number, newCardNumber: b.number })
+  assert.equal(dup.code, 409)
+  assert.equal((await db.query(`SELECT card_number FROM loyalty_cards WHERE label = 'A'`)).rows[0].card_number, a.number)
+  assert.equal((await db.query(`SELECT COUNT(*) AS n FROM loyalty_edits`)).rows[0].n, 0)
+})
+
+test('an empty name, nothing to change, and an unknown card are all refused cleanly', async () => {
+  const { number } = await newCard('Maria')
+  assert.equal((await call({ action: 'edit', cardNumber: number, label: '   ' })).code, 400)
+  assert.equal((await call({ action: 'edit', cardNumber: number })).code, 400)
+  assert.equal((await call({ action: 'edit', cardNumber: 'LC-ZZZZ', label: 'x' })).code, 404)
+  assert.equal((await call({ action: 'edit', cardNumber: 'nonsense', label: 'x' })).code, 400)
+  const same = await call({ action: 'edit', cardNumber: number, label: 'Maria', newCardNumber: number })
+  assert.equal(same.code, 200)
+  assert.equal(same.body.changed, false)
+  assert.equal((await db.query(`SELECT COUNT(*) AS n FROM loyalty_edits`)).rows[0].n, 0)
+})
+
+test('names typed into an edit are cleaned and stored as plain text', async () => {
+  const { number } = await newCard('x')
+  const nasty = "Robert'); DROP TABLE loyalty_cards;--"
+  const r = await call({ action: 'edit', cardNumber: number, label: nasty + '\n\t' + 'y'.repeat(200) })
+  assert.equal(r.code, 200)
+  assert.ok(r.body.card.label.length <= 60)
+  assert.ok(!/[\u0000-\u001f]/.test(r.body.card.label))
+  assert.equal((await db.query(`SELECT COUNT(*) AS n FROM loyalty_cards`)).rows[0].n, 1)
+})
+
+test('a disabled card can still be corrected, and editing never changes the balance or the ledger total', async () => {
+  const { number } = await newCard('Ana')
+  await fill(number, 4)
+  await call({ action: 'disable', cardNumber: number })
+  assert.equal((await call({ action: 'edit', cardNumber: number, label: 'Anna' })).code, 200)
+  const { rows } = await db.query(`SELECT c.balance, COALESCE(SUM(l.stamps), 0) AS total FROM loyalty_cards c LEFT JOIN loyalty_ledger l ON l.card_id = c.id GROUP BY c.id`)
+  assert.equal(Number(rows[0].balance), 4)
+  assert.equal(Number(rows[0].total), 4)
 })
