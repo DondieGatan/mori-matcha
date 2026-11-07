@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { STAMPS_PER_REWARD } from '../data/loyalty'
+import { REWARD_TEXT, STAMPS_PER_REWARD } from '../data/loyalty'
 
 // The digital loyalty card: a green front and the stamp card. Pure display; the stamps themselves live on the server and
 // are added by the café team, so nothing on this card can be edited from the browser.
@@ -35,21 +35,24 @@ function Stamp({ index, animate }) {
   )
 }
 
+// The front of the card is Mori's own picture. The member's name and card number sit on a soft strip at the bottom.
 export function LoyaltyCardFront({ label, cardNumber }) {
   return (
-    <div className="loyalty-front" role="img" aria-label={`Mori Matcha loyalty card${label ? ' for ' + label : ''}`}>
-      <svg className="loyalty-front-leaf" viewBox="0 0 200 200" aria-hidden="true">
-        <path d="M100 190C40 160 20 90 100 20c80 70 60 140 0 170z" fill="none" stroke="#ece1c8" strokeWidth="1.5" opacity="0.18" />
-        <path d="M100 185V40M100 110l-34-30M100 140l40-36" stroke="#ece1c8" strokeWidth="1.2" opacity="0.18" strokeLinecap="round" />
-      </svg>
-      <p className="loyalty-front-top">LOYALTY CARD</p>
-      <p className="loyalty-front-brand">
-        MORI <span>Matcha</span>
-      </p>
-      <p className="loyalty-front-tag">Freshly whisked &middot; Made to order</p>
-      <div className="loyalty-front-foot">
-        <span>{label || 'Your name'}</span>
-        <span>{cardNumber || 'LC-····'}</span>
+    <div
+      className="loyalty-front"
+      role="img"
+      aria-label={`Mori Matcha loyalty card${label ? ' for ' + label : ''}${cardNumber ? ', card number ' + cardNumber : ''}`}
+    >
+      <img className="loyalty-sheet-bg" src="/loyalty/card-front.webp" alt="" width="1080" height="766" draggable="false" decoding="async" />
+      <div className="loyalty-front-bar">
+        <div className="loyalty-front-who">
+          <small>Member</small>
+          <span>{label || 'Your name'}</span>
+        </div>
+        <div className="loyalty-front-id">
+          <small>Card no.</small>
+          <span>{cardNumber || 'LC-····'}</span>
+        </div>
       </div>
     </div>
   )
@@ -108,6 +111,7 @@ export function LoyaltyCardBack({ balance = 0, freshFrom = null, autoplay = fals
     <div className="loyalty-back">
       <div className="loyalty-sheet" ref={sheet}>
         <img className="loyalty-sheet-bg" src="/loyalty/card-design.webp" alt="" width="1080" height="766" draggable="false" decoding="async" />
+        <p className="loyalty-sheet-caption">Collect the stamps and get {REWARD_TEXT}</p>
         <ol className="loyalty-slots" aria-label={`${filled} of ${STAMPS_PER_REWARD} stamps collected`}>
           {slots}
           <li className={'loyalty-slot loyalty-slot-free' + (ready ? ' is-ready' : '')} style={slotStyle(STAMPS_PER_REWARD)}>
