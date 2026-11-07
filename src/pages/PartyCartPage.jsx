@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import BackToTop from '../components/BackToTop'
+import Assistant from '../components/Assistant'
 import PartyInquiry from '../components/PartyInquiry'
 import { INSTAGRAM_DM_URL, INSTAGRAM_PROFILE_URL, formatPeso } from '../data/menu'
 import { PARTY_ADDONS, PARTY_INCLUDED, PARTY_NOTES, PARTY_PACKAGES, PARTY_VARIETIES } from '../data/partyCart'
@@ -204,6 +205,7 @@ export default function PartyCartPage() {
       </main>
       <Footer />
       <BackToTop />
+      <Assistant />
     </>
   )
 }

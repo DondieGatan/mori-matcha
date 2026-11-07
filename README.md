@@ -29,6 +29,11 @@ event inquiry. Nothing is sent unless you press the Instagram button, so it is s
 - **Party Cart page** for events: four packages, optional add-ons and booking notes, and an inquiry builder that
   validates the details (date, guest count, venue) and composes a ready-to-send Instagram message that can be
   copied or sent in one tap.
+- **"Ask Mori" customer-service assistant** on every page: a chat panel that answers questions about the menu, prices,
+  sweetness and milk options, opening hours (open or closed right now, in Manila time), how to order, payment,
+  delivery and the Party Cart. Replies can be **read aloud** (text-to-speech through the browser's built-in voices,
+  with a per-reply Listen button and a voice-replies switch that is off by default). It never takes orders itself; it
+  points customers to the cart and the Instagram step. See "The assistant" below.
 - **SEO and PWA**: meta tags, JSON-LD kept in sync with the live opening hours, per-page share previews, an
   installable web app manifest, a sitemap, and Vercel Analytics for production monitoring.
 
@@ -40,13 +45,32 @@ Browser (React 19 + Vite, two HTML entries: index.html and party-cart.html)
    ├── /api/orders          POST: create an order (rate limited)   GET: list orders (admin key)
    ├── /api/orders/:number  PATCH status/payment or restore, DELETE to trash or purge (admin key)
    ├── /api/availability    GET per-drink status (public)   PATCH (admin key)
-   └── /api/reviews         Google Places reviews (server-side key)
+   ├── /api/reviews         Google Places reviews (server-side key)
+   └── /api/assistant       POST: customer-service chat (Gemini, with a rule-based fallback)
           │
           └── Vercel serverless functions (Node) ── Neon Postgres (orders, availability)
 ```
 
 The functions create their tables on first use with idempotent migrations (`CREATE TABLE IF NOT EXISTS` and
 `ADD COLUMN IF NOT EXISTS`), and skip the check once it has succeeded on a warm instance.
+
+## The assistant
+
+`api/assistant.js` takes the last few chat turns and returns one short, spoken-style reply.
+
+- **Grounded in the site's own data.** `api/_lib/shop.js` builds the model's facts from `src/data` (drinks, prices,
+  sweetness levels, hours, Party Cart packages), plus the live availability table, so it cannot drift from the page.
+  The model is told to use only those facts, to say it is unsure about anything else (allergens, delivery fees,
+  stock) and point to Instagram, and to treat customer text as a question, never as instructions.
+- **Always answers.** With `GEMINI_API_KEY` set (optional `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL`) the reply is
+  written by Gemini, with a second model as fallback. With no key, or if both models fail, keyword-based answers
+  from the same data are used, so the assistant never shows an empty state.
+- **Safe to expose.** Messages are capped at 500 characters and the history at 10 turns, only `user` and `assistant`
+  roles are accepted, replies are stripped of markdown, links and emoji, and each client is limited to 30 messages
+  per 10 minutes per warm serverless instance (best effort, since instances do not share memory).
+- **Text-to-speech** lives in `src/hooks/useSpeech.js`: the browser's `speechSynthesis`, no key and no audio leaves
+  the device. It prefers a natural English voice, speaks long replies sentence by sentence, stops when the chat is
+  closed or a new question is sent, and remembers the voice-replies choice.
 
 ## Structure
 
