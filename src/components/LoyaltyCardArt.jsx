@@ -19,6 +19,30 @@ const slotStyle = (i) => ({
   width: (SEAL / ART_W) * 100 + '%',
 })
 
+// Text on the cards is sized from --u, one hundredth of the card's own width. Measuring it here (instead of newer CSS container
+// units) keeps the cards looking the same on every phone, including older iPhones.
+function useCardUnit(extraRef) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return undefined
+    if (extraRef) extraRef.current = el
+    const set = () => {
+      const w = el.offsetWidth
+      if (w) el.style.setProperty('--u', w / 100 + 'px')
+    }
+    set()
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', set)
+      return () => window.removeEventListener('resize', set)
+    }
+    const ro = new ResizeObserver(set)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [extraRef])
+  return ref
+}
+
 const FIRST_DELAY = 280 // ms before the first stamp comes down
 const STAMP_GAP = 330 // ms between stamps that come down one after another
 
@@ -37,8 +61,10 @@ function Stamp({ index, animate }) {
 
 // The front of the card is Mori's own picture. The member's name and card number sit on a soft strip at the bottom.
 export function LoyaltyCardFront({ label, cardNumber }) {
+  const unit = useCardUnit()
   return (
     <div
+      ref={unit}
       className="loyalty-front"
       role="img"
       aria-label={`Mori Matcha loyalty card${label ? ' for ' + label : ''}${cardNumber ? ', card number ' + cardNumber : ''}`}
@@ -65,6 +91,7 @@ export function LoyaltyCardBack({ balance = 0, freshFrom = null, autoplay = fals
   const ready = balance >= STAMPS_PER_REWARD
   const filled = ready ? STAMPS_PER_REWARD : balance
   const sheet = useRef(null)
+  const unit = useCardUnit(sheet)
   const [visible, setVisible] = useState(!autoplay)
   const [replays, setReplays] = useState({})
 
@@ -109,7 +136,7 @@ export function LoyaltyCardBack({ balance = 0, freshFrom = null, autoplay = fals
 
   return (
     <div className="loyalty-back">
-      <div className="loyalty-sheet" ref={sheet}>
+      <div className="loyalty-sheet" ref={unit}>
         <img className="loyalty-sheet-bg" src="/loyalty/card-design.webp" alt="" width="1080" height="766" draggable="false" decoding="async" />
         <p className="loyalty-sheet-caption">Collect the stamps and get {REWARD_TEXT}</p>
         <ol className="loyalty-slots" aria-label={`${filled} of ${STAMPS_PER_REWARD} stamps collected`}>
