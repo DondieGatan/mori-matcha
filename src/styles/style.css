@@ -2552,6 +2552,7 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
 .admin-loyalty-ledger time { color: var(--text-dim); font-size: 0.78rem; white-space: nowrap; }
 .admin-small { padding: 4px 12px; font-size: 0.8rem; }
 .is-disabled td { opacity: 0.55; }
+.is-disabled td.admin-loyalty-rowbtns { opacity: 1; } /* the buttons stay fully visible so a disabled card can still be opened or edited */
 
 /* The stamp card inside an opened card on the staff page */
 .admin-loyalty-detail-grid { display: grid; grid-template-columns: minmax(260px, 400px) 1fr; gap: 22px; align-items: start; }
@@ -2599,3 +2600,10 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
   .admin-loyalty .admin-loyalty-detailrow { margin-top: 6px; border: 1px solid var(--border); border-radius: 12px; background: var(--cream-soft); }
   .admin-loyalty .admin-loyalty-detail { padding: 14px; }
 }
+
+/* Row buttons (Open / Edit), the link under the stamp card, and the disabled notice */
+.admin-loyalty-rowbtns { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.admin-loyalty-detail-card .admin-loyalty-link { margin: 14px 0 0; }
+.admin-loyalty-link-row input { flex: 1 1 170px; }
+.admin-loyalty-disabled { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid #d6a79c; border-radius: 12px; background: #f8e6e1; color: #7a2e22; font-size: 0.9rem; line-height: 1.5; }
+.admin-loyalty-disabled span { flex: 1 1 220px; }

@@ -109,7 +109,8 @@ phone to edit. The rules (9 stamps, the 10th drink free) live in `src/data/loyal
   (best effort per serverless instance); every malformed or unknown link looks the same, "not found".
 
 Staff can also fix a typo in a customer's name or the card number (the link, stamps and history are untouched, and each change is written
-to an edit history). `npm test` runs `tests/loyalty.test.mjs`: 44 tests against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
+to an edit history, as are disabling or enabling a card and making a new link, with who did it and when).
+`npm test` runs `tests/loyalty.test.mjs`: 48 tests against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
 double stamping, racing requests, replayed redemptions, guessed or replaced links, injection, editing history).
 
 ## Structure

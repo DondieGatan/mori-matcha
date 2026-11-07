@@ -23,6 +23,15 @@ function itemsText(items) {
   return items.map((i) => `${i.qty || 1}× ${i.name}`).join(', ')
 }
 
+// How each kind of recorded change reads in a card's history.
+function editText(h) {
+  if (h.field === 'name') return ['Name changed', `${h.old_value} → ${h.new_value}`]
+  if (h.field === 'number') return ['Card number changed', `${h.old_value} → ${h.new_value}`]
+  if (h.field === 'status') return [h.new_value === 'disabled' ? 'Card disabled' : 'Card enabled', '']
+  if (h.field === 'link') return ['New link made', 'the old link stopped working']
+  return ['Changed', '']
+}
+
 const LINK_PROBLEM = {
   'not-saved':
     "This card was made before links could be saved, so its link can't be shown. Press New link once to make one that always shows here. The old link stops working.",
@@ -103,6 +112,25 @@ export default function AdminLoyalty({ adminKey }) {
     setLedger(l.entries)
     setEdits(l.edits || [])
     if (k) setLink({ cardNumber, token: k.token, reason: k.reason })
+  }
+
+  // The Edit button in a card's row: opens the card if it is closed, and opens or closes the edit form.
+  async function startEdit(c) {
+    const form = { card: c.cardNumber, label: c.label, number: c.cardNumber }
+    if (open === c.cardNumber) {
+      setEditing(editing && editing.card === c.cardNumber ? null : form)
+      return
+    }
+    setFresh(null)
+    setOpen(c.cardNumber)
+    setPick('')
+    setLink(null)
+    setEditing(form)
+    try {
+      await loadDetail(c.cardNumber)
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   async function openCard(cardNumber) {
@@ -274,9 +302,12 @@ export default function AdminLoyalty({ adminKey }) {
                     <td data-label="Free drinks">
                       {c.rewardsReady > 0 ? <b className="admin-loyalty-ready">{c.rewardsReady} ready</b> : '—'} <small>({c.rewardsRedeemed} used)</small>
                     </td>
-                    <td>
+                    <td className="admin-loyalty-rowbtns">
                       <button type="button" className="btn btn-ghost admin-small" onClick={() => openCard(c.cardNumber)}>
                         {open === c.cardNumber ? 'Close' : 'Open'}
+                      </button>
+                      <button type="button" className="btn btn-ghost admin-small" disabled={busy} onClick={() => startEdit(c)} aria-label={`Edit ${c.cardNumber}`}>
+                        Edit
                       </button>
                     </td>
                   </tr>
@@ -286,8 +317,6 @@ export default function AdminLoyalty({ adminKey }) {
                         <div className="admin-loyalty-detail-grid">
                           <div className="admin-loyalty-detail-card">
                             <LoyaltyCardBack balance={c.balance} freshFrom={fresh && fresh.card === c.cardNumber ? fresh.from : null} />
-                          </div>
-                          <div className="admin-loyalty-detail-main">
                             <div className="admin-loyalty-link">
                               <p className="admin-loyalty-link-title">Customer&apos;s private link</p>
                               {!link || link.cardNumber !== c.cardNumber ? (
@@ -315,79 +344,30 @@ export default function AdminLoyalty({ adminKey }) {
                                   <p className="admin-loyalty-hint">{LINK_PROBLEM[link.reason] || LINK_PROBLEM.unreadable}</p>
                                   <div className="admin-loyalty-btns">
                                     <button type="button" className="btn btn-primary admin-small" disabled={busy} onClick={() => makeNewLink(c)}>
-                                      New link
+                                      Make a link
                                     </button>
                                   </div>
                                 </>
                               )}
                             </div>
-
-                            <div className="admin-loyalty-stamp">
-                              <label>
-                                Add a stamp from a paid order
-                                <select value={pick} onChange={(e) => setPick(e.target.value)}>
-                                  <option value="">Choose a paid order…</option>
-                                  {eligible.map((o) => (
-                                    <option key={o.orderNumber} value={o.orderNumber}>
-                                      {o.orderNumber} · ₱{o.total} · {itemsText(o.items)} → {o.stamps} stamp{o.stamps === 1 ? '' : 's'}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-                              <button
-                                type="button"
-                                className="btn btn-primary"
-                                disabled={busy || !pick || c.disabled}
-                                onClick={() => {
-                                  setFresh({ card: c.cardNumber, from: c.balance })
-                                  run(
-                                    (d) => `${d.stamped} stamp${d.stamped === 1 ? '' : 's'} added to ${c.cardNumber}.`,
-                                    { action: 'stamp', cardNumber: c.cardNumber, orderNumber: pick },
-                                    async () => {
-                                      setPick('')
-                                      await loadDetail(c.cardNumber, { withLink: false })
-                                    },
-                                  )
-                                }}
-                              >
-                                Add stamp
-                              </button>
-                            </div>
-                            {eligible.length === 0 && <p className="admin-loyalty-hint">No paid orders are waiting for a stamp. Mark an order as paid on the Orders tab first.</p>}
-
-                            <div className="admin-loyalty-btns">
-                              <button
-                                type="button"
-                                className="btn btn-primary"
-                                disabled={busy || c.rewardsReady < 1 || c.disabled}
-                                onClick={() => {
-                                  if (!window.confirm(`Give ${c.label} a free drink? This uses ${STAMPS_PER_REWARD} stamps.`)) return
-                                  run(() => `Free drink given to ${c.cardNumber}.`, { action: 'redeem', cardNumber: c.cardNumber }, () => loadDetail(c.cardNumber, { withLink: false }))
-                                }}
-                              >
-                                Give free drink
-                              </button>
-                              <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => makeNewLink(c)}>
-                                New link
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-ghost"
-                                disabled={busy}
-                                onClick={() => setEditing(editing && editing.card === c.cardNumber ? null : { card: c.cardNumber, label: c.label, number: c.cardNumber })}
-                              >
-                                Edit name or number
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-ghost"
-                                disabled={busy}
-                                onClick={() => run(() => (c.disabled ? 'Card enabled.' : 'Card disabled.'), { action: c.disabled ? 'enable' : 'disable', cardNumber: c.cardNumber })}
-                              >
-                                {c.disabled ? 'Enable card' : 'Disable card'}
-                              </button>
-                            </div>
-
+                          </div>
+                          <div className="admin-loyalty-detail-main">
+                            {c.disabled && (
+                              <div className="admin-loyalty-disabled" role="status">
+                                <span>
+                                  <b>This card is disabled.</b> The customer&apos;s link and the card number do not work until you enable it. Stamps and history are
+                                  kept.
+                                </span>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary admin-small"
+                                  disabled={busy}
+                                  onClick={() => run(() => 'Card enabled.', { action: 'enable', cardNumber: c.cardNumber }, () => loadDetail(c.cardNumber, { withLink: false }))}
+                                >
+                                  Enable card
+                                </button>
+                              </div>
+                            )}
                             {editing && editing.card === c.cardNumber && (
                               <form
                                 className="admin-loyalty-edit"
@@ -445,14 +425,76 @@ export default function AdminLoyalty({ adminKey }) {
                               </form>
                             )}
 
+                            <div className="admin-loyalty-stamp">
+                              <label>
+                                Add a stamp from a paid order
+                                <select value={pick} onChange={(e) => setPick(e.target.value)}>
+                                  <option value="">Choose a paid order…</option>
+                                  {eligible.map((o) => (
+                                    <option key={o.orderNumber} value={o.orderNumber}>
+                                      {o.orderNumber} · ₱{o.total} · {itemsText(o.items)} → {o.stamps} stamp{o.stamps === 1 ? '' : 's'}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={busy || !pick || c.disabled}
+                                onClick={() => {
+                                  setFresh({ card: c.cardNumber, from: c.balance })
+                                  run(
+                                    (d) => `${d.stamped} stamp${d.stamped === 1 ? '' : 's'} added to ${c.cardNumber}.`,
+                                    { action: 'stamp', cardNumber: c.cardNumber, orderNumber: pick },
+                                    async () => {
+                                      setPick('')
+                                      await loadDetail(c.cardNumber, { withLink: false })
+                                    },
+                                  )
+                                }}
+                              >
+                                Add stamp
+                              </button>
+                            </div>
+                            {eligible.length === 0 && <p className="admin-loyalty-hint">No paid orders are waiting for a stamp. Mark an order as paid on the Orders tab first.</p>}
+
+                            <div className="admin-loyalty-btns">
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={busy || c.rewardsReady < 1 || c.disabled}
+                                onClick={() => {
+                                  if (!window.confirm(`Give ${c.label} a free drink? This uses ${STAMPS_PER_REWARD} stamps.`)) return
+                                  run(() => `Free drink given to ${c.cardNumber}.`, { action: 'redeem', cardNumber: c.cardNumber }, () => loadDetail(c.cardNumber, { withLink: false }))
+                                }}
+                              >
+                                Give free drink
+                              </button>
+                              <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => makeNewLink(c)}>
+                                New link
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                disabled={busy}
+                                onClick={() => {
+                                  if (!c.disabled && !window.confirm(`Disable ${c.cardNumber} (${c.label})? Its link and number stop working until you enable it again.`)) return
+                                  run(() => (c.disabled ? 'Card enabled.' : 'Card disabled.'), { action: c.disabled ? 'enable' : 'disable', cardNumber: c.cardNumber }, () => loadDetail(c.cardNumber, { withLink: false }))
+                                }}
+                              >
+                                {c.disabled ? 'Enable card' : 'Disable card'}
+                              </button>
+                            </div>
+
                             <h4>History</h4>
                             <ul className="admin-loyalty-ledger">
                               {history.map((h) =>
                                 h.type === 'edit' ? (
                                   <li key={h.key}>
                                     <span>
-                                      <b>{h.field === 'name' ? 'Name changed' : 'Card number changed'}</b> · {h.old_value} → {h.new_value}
-                                      {h.staff ? ` · by ${h.staff}` : ''}
+                                      <b>{editText(h)[0]}</b>
+                                      {editText(h)[1] ? ` · ${editText(h)[1]}` : ''}
+                                      {h.staff ? ` · by ${h.staff}` : ' · no name recorded'}
                                     </span>
                                     <time>{new Date(h.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</time>
                                   </li>
