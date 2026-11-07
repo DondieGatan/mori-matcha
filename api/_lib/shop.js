@@ -275,7 +275,7 @@ const INTENTS = [
     test: (t) => /\b(party|parties|event|events|birthday|debut|catering|celebration|cart package|packages?|guests?|deposit|booking|book a|reserve|reservation)\b/.test(t),
     answer: (t) => {
       const list = PARTY_PACKAGES.map((x) => `${x.short} for ${x.guests} guests at ${money(x.price)}`).join(', ')
-      if (/\b(book|booking|reserve|reservation|inquiry|inquire|how)\b/.test(t)) return PARTY_FLOW
+      if (/\b(book|booking|reserve|reservation|inquiry|inquire|how (do|can|to|would|should)|steps?)\b/.test(t)) return PARTY_FLOW
       if (/\b(include|included|come with|what do i get)\b/.test(t)) {
         return 'Every package includes one drink per guest, a physical Mori Matcha cart setup, cups, ice and basic serving supplies, and a staff member for the service period. You choose the matcha varieties, the milk and the sweetness.'
       }
