@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { INSTAGRAM_DM_URL } from '../data/menu'
 import { useSpeech } from '../hooks/useSpeech'
+import { useSpeechInput } from '../hooks/useSpeechInput'
 
 const GREETING = "Hi, I'm Mori! Ask me about our drinks, prices, opening hours, how to order, or our party carts."
 const SUGGESTIONS = ['What drinks do you have?', 'Are you open now?', 'How do I order?', 'Tell me about party carts']
@@ -14,6 +15,15 @@ function loadChat() {
   } catch {
     return []
   }
+}
+
+function MicIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" />
+    </svg>
+  )
 }
 
 function SpeakerIcon({ muted }) {
@@ -31,6 +41,8 @@ export default function Assistant({ cartCount = 0 }) {
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const speech = useSpeech()
+  const voiceIn = useSpeechInput()
+  const sendRef = useRef(null) // the recognition callbacks outlive a render, so they call the latest send()
   const listRef = useRef(null)
   const inputRef = useRef(null)
   const launcherRef = useRef(null)
@@ -69,12 +81,15 @@ export default function Assistant({ cartCount = 0 }) {
   function close() {
     setOpen(false)
     speech.stop()
+    voiceIn.stop()
   }
 
-  async function send(raw) {
+  // byVoice: the question was spoken, so the answer is read back even when voice replies are switched off.
+  async function send(raw, byVoice = false) {
     const text = raw.trim().slice(0, MAX_CHARS)
     if (!text || busy) return
     speech.stop()
+    voiceIn.stop()
     const userMsg = { id: nextId.current++, role: 'user', text }
     const history = [...messages, userMsg]
     setMessages(history)
@@ -106,8 +121,9 @@ export default function Assistant({ cartCount = 0 }) {
     const botMsg = { id: nextId.current++, role: 'assistant', text: reply, error: failed }
     setMessages((m) => [...m, botMsg])
     setBusy(false)
-    if (speech.voiceOn && !failed) speech.speak(botMsg.id, reply)
+    if ((speech.voiceOn || byVoice) && !failed) speech.speak(botMsg.id, reply)
   }
+  sendRef.current = send
 
   function onSubmit(e) {
     e.preventDefault()
@@ -116,7 +132,25 @@ export default function Assistant({ cartCount = 0 }) {
 
   function clearChat() {
     speech.stop()
+    voiceIn.stop()
     setMessages([])
+  }
+
+  function toggleMic() {
+    if (voiceIn.listening) {
+      voiceIn.stop()
+      setDraft('')
+      return
+    }
+    speech.stop() // so the microphone does not pick up Mori's own voice
+    setDraft('')
+    voiceIn.start({
+      onInterim: (t) => setDraft(t.slice(0, MAX_CHARS)),
+      onFinal: (t) => {
+        setDraft('')
+        sendRef.current(t, true)
+      },
+    })
   }
 
   const showSuggestions = messages.length === 0 && !busy
@@ -204,6 +238,11 @@ export default function Assistant({ cartCount = 0 }) {
           )}
         </div>
 
+        {(voiceIn.listening || voiceIn.error) && (
+          <p className={'assistant-voice-note' + (voiceIn.error ? ' is-error' : '')} role={voiceIn.error ? 'alert' : 'status'}>
+            {voiceIn.error || 'Listening… ask your question out loud.'}
+          </p>
+        )}
         <form className="assistant-form" onSubmit={onSubmit}>
           <input
             ref={inputRef}
@@ -211,11 +250,24 @@ export default function Assistant({ cartCount = 0 }) {
             value={draft}
             maxLength={MAX_CHARS}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Type your question…"
+            placeholder={voiceIn.listening ? 'Listening… speak now' : 'Type your question…'}
             aria-label="Your message"
             autoComplete="off"
             enterKeyHint="send"
           />
+          {voiceIn.supported && (
+            <button
+              type="button"
+              className={'assistant-mic' + (voiceIn.listening ? ' is-listening' : '')}
+              aria-pressed={voiceIn.listening}
+              aria-label={voiceIn.listening ? 'Stop listening' : 'Speak your question'}
+              title={voiceIn.listening ? 'Stop listening' : 'Speak your question'}
+              disabled={busy}
+              onClick={toggleMic}
+            >
+              <MicIcon />
+            </button>
+          )}
           <button type="submit" className="assistant-send" disabled={busy || !draft.trim()} aria-label="Send message">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M5 12h14M13 6l6 6-6 6" />
@@ -223,7 +275,7 @@ export default function Assistant({ cartCount = 0 }) {
           </button>
         </form>
         <p className="assistant-foot">
-          AI assistant, so answers may not always be exact. To order, use the cart or{' '}
+          AI assistant, so answers may not always be exact.{voiceIn.supported && " Voice input uses your browser's speech service."} To order, use the cart or{' '}
           <a href={INSTAGRAM_DM_URL} target="_blank" rel="noopener">
             message us on Instagram
           </a>
