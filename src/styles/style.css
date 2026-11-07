@@ -654,6 +654,7 @@ img { max-width: 100%; display: block; }
 }
 
 .open-status.is-open {
+  background: rgba(47, 179, 128, 0.16);
   background: color-mix(in srgb, #2fb380 16%, transparent);
   color: #1f7a53;
 }
@@ -661,6 +662,7 @@ img { max-width: 100%; display: block; }
 .open-status.is-open::before { background: #2fb380; }
 
 .open-status.is-closed {
+  background: rgba(179, 69, 61, 0.12);
   background: color-mix(in srgb, #b3453d 12%, transparent);
   color: #a13a33;
 }
@@ -1943,6 +1945,7 @@ img { max-width: 100%; display: block; }
   margin: -4px 0 0;
   padding: 12px 14px;
   border-radius: 12px;
+  background: rgba(45, 68, 51, 0.09);
   background: color-mix(in srgb, var(--forest) 9%, transparent);
   color: var(--forest);
   font-size: 0.86rem;
@@ -2568,4 +2571,31 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
   textarea {
     font-size: 16px !important; /* beats the per-form sizes above; this only matters on touch screens */
   }
+}
+
+/* The customer's private link and the edit form, in an opened card on the staff page */
+.admin-loyalty-link { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: #fffaf0; }
+.admin-loyalty-link-title { margin: 0; font-size: 0.74rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); }
+.admin-loyalty-link-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.admin-loyalty-link-row input { flex: 1 1 220px; min-width: 0; text-overflow: ellipsis; }
+.admin-loyalty-link .admin-loyalty-hint { margin: 0; }
+.admin-loyalty-edit { display: flex; flex-direction: column; gap: 10px; margin: 14px 0; padding: 14px; border: 1px solid var(--border); border-radius: 12px; background: #fffaf0; }
+.admin-loyalty-edit label { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; color: var(--text-dim); }
+.admin-loyalty-edit .admin-error, .admin-loyalty-edit .admin-loyalty-hint { margin: 0; }
+
+/* On phones the card list stacks into cards, so an opened card (its link, Copy button and edit form) always fits the screen
+   instead of sitting inside a table that scrolls sideways. */
+@media (max-width: 780px) {
+  .admin-loyalty .admin-table-wrap { overflow: visible; border: none; border-radius: 0; }
+  .admin-loyalty .admin-table,
+  .admin-loyalty .admin-table tbody,
+  .admin-loyalty .admin-table tr,
+  .admin-loyalty .admin-table td { display: block; width: 100%; }
+  .admin-loyalty .admin-table thead { display: none; }
+  .admin-loyalty .admin-table td { border-bottom: none; padding: 6px 14px; }
+  .admin-loyalty .admin-loyalty-cardrow { margin-top: 12px; padding: 8px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--cream-soft); }
+  .admin-loyalty .admin-loyalty-cardrow td[data-label] { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .admin-loyalty .admin-loyalty-cardrow td[data-label]::before { content: attr(data-label); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+  .admin-loyalty .admin-loyalty-detailrow { margin-top: 6px; border: 1px solid var(--border); border-radius: 12px; background: var(--cream-soft); }
+  .admin-loyalty .admin-loyalty-detail { padding: 14px; }
 }

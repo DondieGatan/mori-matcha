@@ -3,9 +3,10 @@
 //  - a stamp needs a real order the café has marked paid, and an order can be stamped once, ever (unique index)
 //  - an order's stamps are capped by what was paid at the cheapest drink, so a fake "8 drinks for 1 peso" order earns 1
 //  - a reward needs enough stamps, is taken in the same statement that checks them, and a double click cannot take two
-//  - the card's secret link is random (128 bits) and only its hash is stored, so a database leak does not leak links
+//  - the card's secret link is random (128 bits). Customers' links are checked against a one-way hash. Staff can see a link
+//    again because an encrypted copy is kept, sealed with a key made from the admin key, so the database alone never reveals one
 //  - a mistake is undone with a reversing entry (a "void"), never by editing or deleting history
-import { createHash, randomBytes, randomInt } from 'node:crypto'
+import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes, randomInt } from 'node:crypto'
 import {
   CARD_NUMBER_ALPHABET,
   CARD_NUMBER_PATTERN,
@@ -42,6 +43,19 @@ export async function ensureTables(sql) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `
+  await sql`ALTER TABLE loyalty_cards ADD COLUMN IF NOT EXISTS token_enc TEXT`
+  await sql`
+    CREATE TABLE IF NOT EXISTS loyalty_edits (
+      id SERIAL PRIMARY KEY,
+      card_id INTEGER NOT NULL REFERENCES loyalty_cards(id),
+      field TEXT NOT NULL CHECK (field IN ('name', 'number')),
+      old_value TEXT,
+      new_value TEXT,
+      staff TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )
+  `
+  await sql`CREATE INDEX IF NOT EXISTS loyalty_edits_card ON loyalty_edits (card_id, id DESC)`
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS loyalty_one_stamp_per_order ON loyalty_ledger (order_number) WHERE kind = 'stamp'`
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS loyalty_one_void_per_entry ON loyalty_ledger (voids_id) WHERE kind = 'void'`
   await sql`CREATE INDEX IF NOT EXISTS loyalty_ledger_card ON loyalty_ledger (card_id, id DESC)`
@@ -64,6 +78,39 @@ function newCardNumber() {
 }
 
 const newToken = () => randomBytes(16).toString('base64url') // 128 bits, 22 characters
+
+// The encrypted copy of a link (AES-256-GCM). The key comes from the admin key, so someone who only has the database cannot read
+// links, and changing the admin key makes the saved copies unreadable (staff then press "New link"). With no admin key set,
+// nothing is saved.
+function linkKey() {
+  const secret = process.env.ADMIN_KEY
+  if (!secret) return null
+  return Buffer.from(hkdfSync('sha256', secret, 'mori-loyalty-links', 'card-link-encryption-v1', 32))
+}
+
+export function sealToken(token) {
+  const key = linkKey()
+  if (!key) return null
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', key, iv)
+  const data = Buffer.concat([cipher.update(token, 'utf8'), cipher.final()])
+  return ['v1', iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), data.toString('base64url')].join('.')
+}
+
+export function openToken(blob) {
+  const key = linkKey()
+  if (!key || typeof blob !== 'string') return null
+  try {
+    const [version, iv, tag, data] = blob.split('.')
+    if (version !== 'v1') return null
+    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'base64url'))
+    decipher.setAuthTag(Buffer.from(tag, 'base64url'))
+    const token = Buffer.concat([decipher.update(Buffer.from(data, 'base64url')), decipher.final()]).toString('utf8')
+    return /^[A-Za-z0-9_-]{16,64}$/.test(token) ? token : null
+  } catch {
+    return null
+  }
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // Customer side
@@ -107,8 +154,8 @@ export async function createCard(sql, { label }) {
   for (let attempt = 0; attempt < 8; attempt++) {
     const cardNumber = newCardNumber()
     const { rows } = await sql`
-      INSERT INTO loyalty_cards (card_number, token_hash, label)
-      VALUES (${cardNumber}, ${hashToken(token)}, ${name})
+      INSERT INTO loyalty_cards (card_number, token_hash, token_enc, label)
+      VALUES (${cardNumber}, ${hashToken(token)}, ${sealToken(token)}, ${name})
       ON CONFLICT (card_number) DO NOTHING
       RETURNING card_number, label, balance
     `
@@ -171,7 +218,12 @@ export async function cardLedger(sql, { cardNumber }) {
     FROM loyalty_ledger l JOIN loyalty_cards c ON c.id = l.card_id
     WHERE c.card_number = ${number} ORDER BY l.id DESC LIMIT 60
   `
-  return { ok: true, entries: rows }
+  const { rows: edits } = await sql`
+    SELECT e.id, e.field, e.old_value, e.new_value, e.staff, e.created_at
+    FROM loyalty_edits e JOIN loyalty_cards c ON c.id = e.card_id
+    WHERE c.card_number = ${number} ORDER BY e.id DESC LIMIT 30
+  `
+  return { ok: true, entries: rows, edits }
 }
 
 export async function stampCard(sql, { cardNumber, orderNumber, staff, note }) {
@@ -290,7 +342,7 @@ export async function regenerateLink(sql, { cardNumber }) {
   await ensureTables(sql)
   const token = newToken()
   const { rows } = await sql`
-    UPDATE loyalty_cards SET token_hash = ${hashToken(token)} WHERE card_number = ${number} AND disabled_at IS NULL
+    UPDATE loyalty_cards SET token_hash = ${hashToken(token)}, token_enc = ${sealToken(token)} WHERE card_number = ${number} AND disabled_at IS NULL
     RETURNING card_number, label
   `
   if (rows.length === 0) return fail(404, 'No active card with that number')
@@ -306,4 +358,66 @@ export async function setCardDisabled(sql, { cardNumber, disabled }) {
     : await sql`UPDATE loyalty_cards SET disabled_at = NULL WHERE card_number = ${number} RETURNING card_number`
   if (rows.length === 0) return fail(404, 'No card with that number')
   return { ok: true }
+}
+
+// The customer's private link, so staff can see it and copy it again. Cards made before links were saved have no copy: the staff
+// panel then offers "New link". A saved copy that no longer matches the card's hash (or cannot be opened) is reported as unreadable.
+export async function cardLink(sql, { cardNumber }) {
+  const number = normalizeCardNumber(cardNumber)
+  if (!number) return fail(400, 'That is not a valid card number')
+  await ensureTables(sql)
+  const { rows } = await sql`SELECT token_hash, token_enc, disabled_at FROM loyalty_cards WHERE card_number = ${number}`
+  if (rows.length === 0) return fail(404, 'No card with that number')
+  if (!rows[0].token_enc) return { ok: true, token: null, reason: 'not-saved' }
+  const token = openToken(rows[0].token_enc)
+  if (!token || hashToken(token) !== rows[0].token_hash) return { ok: true, token: null, reason: 'unreadable' }
+  return { ok: true, token, disabled: Boolean(rows[0].disabled_at) }
+}
+
+// Fix a typo in the customer's name or the card number. The stamps, history and secret link stay exactly as they are; every
+// change is written to the edit history (who, what, when). A card number must keep the LC-XXXX shape and be unused.
+export async function editCard(sql, { cardNumber, label, newCardNumber, staff }) {
+  const number = normalizeCardNumber(cardNumber)
+  if (!number) return fail(400, 'That is not a valid card number')
+  const wantsName = label !== undefined && label !== null
+  const name = wantsName ? clean(label, 60) : null
+  if (wantsName && !name) return fail(400, 'Enter the customer name or Instagram handle')
+  const wantsNumber = newCardNumber !== undefined && newCardNumber !== null && String(newCardNumber).trim() !== ''
+  const target = wantsNumber ? normalizeCardNumber(newCardNumber) : null
+  if (wantsNumber && !target) return fail(400, 'A card number looks like LC-7K3Q: LC- and 4 letters or numbers (no O, I, L, 0 or 1)')
+  if (!wantsName && !wantsNumber) return fail(400, 'Nothing to change')
+  await ensureTables(sql)
+
+  const { rows: found } = await sql`SELECT id, card_number, label, balance FROM loyalty_cards WHERE card_number = ${number}`
+  if (found.length === 0) return fail(404, 'No card with that number')
+  const cur = found[0]
+  const nextName = name ?? cur.label
+  const nextNumber = target ?? cur.card_number
+  const nameChanged = nextName !== cur.label
+  const numberChanged = nextNumber !== cur.card_number
+  const same = { cardNumber: cur.card_number, label: cur.label, balance: cur.balance }
+  if (!nameChanged && !numberChanged) return { ok: true, changed: false, card: same }
+
+  const who = clean(staff, 40) || null
+  try {
+    const { rows } = await sql`
+      WITH upd AS (
+        UPDATE loyalty_cards SET label = ${nextName}::text, card_number = ${nextNumber}::text
+        WHERE id = ${cur.id}::int RETURNING card_number, label, balance
+      ), en AS (
+        INSERT INTO loyalty_edits (card_id, field, old_value, new_value, staff)
+        SELECT ${cur.id}::int, 'name', ${cur.label}::text, ${nextName}::text, ${who}::text WHERE ${nameChanged}::boolean
+        RETURNING id
+      ), eu AS (
+        INSERT INTO loyalty_edits (card_id, field, old_value, new_value, staff)
+        SELECT ${cur.id}::int, 'number', ${cur.card_number}::text, ${nextNumber}::text, ${who}::text WHERE ${numberChanged}::boolean
+        RETURNING id
+      )
+      SELECT card_number, label, balance FROM upd
+    `
+    return { ok: true, changed: true, card: { cardNumber: rows[0].card_number, label: rows[0].label, balance: rows[0].balance } }
+  } catch (err) {
+    if (err && (err.code === '23505' || /unique|duplicate/i.test(String(err.message)))) return fail(409, 'Another card already has that number')
+    throw err
+  }
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { STAMPS_PER_REWARD } from '../data/loyalty'
+import { CARD_NUMBER_PATTERN, STAMPS_PER_REWARD } from '../data/loyalty'
 import { LoyaltyCardBack } from './LoyaltyCardArt'
 
 // Staff-only loyalty panel for the admin page. Every button here calls /api/loyalty with the admin key; the server does the
@@ -23,6 +23,12 @@ function itemsText(items) {
   return items.map((i) => `${i.qty || 1}× ${i.name}`).join(', ')
 }
 
+const LINK_PROBLEM = {
+  'not-saved':
+    "This card was made before links could be saved, so its link can't be shown. Press New link once to make one that always shows here. The old link stops working.",
+  unreadable: "The saved link can't be read (the admin key may have been changed). Press New link to make a fresh one.",
+}
+
 export default function AdminLoyalty({ adminKey }) {
   const [staff, setStaff] = useState(() => {
     try {
@@ -42,6 +48,9 @@ export default function AdminLoyalty({ adminKey }) {
   const [open, setOpen] = useState(null) // card number whose panel is open
   const [pick, setPick] = useState('') // order number chosen to stamp
   const [ledger, setLedger] = useState([])
+  const [edits, setEdits] = useState([])
+  const [link, setLink] = useState(null) // { cardNumber, token, reason } for the open card
+  const [editing, setEditing] = useState(null) // { card, label, number } while the edit form is open
   const [fresh, setFresh] = useState(null) // { card, from }: the stamp card shows stamps after `from` coming down
 
   const refresh = useCallback(
@@ -88,29 +97,78 @@ export default function AdminLoyalty({ adminKey }) {
 
   const linkFor = (token) => `${window.location.origin}/card#${token}`
 
+  // The history (stamps, free drinks, undos, edits) and the customer's private link for one card.
+  async function loadDetail(cardNumber, { withLink = true } = {}) {
+    const [l, k] = await Promise.all([api(adminKey, { action: 'ledger', cardNumber }), withLink ? api(adminKey, { action: 'link', cardNumber }) : null])
+    setLedger(l.entries)
+    setEdits(l.edits || [])
+    if (k) setLink({ cardNumber, token: k.token, reason: k.reason })
+  }
+
   async function openCard(cardNumber) {
     setFresh(null)
+    setEditing(null)
     if (open === cardNumber) {
       setOpen(null)
       return
     }
     setOpen(cardNumber)
     setPick('')
-    setFresh(null)
+    setLink(null)
     try {
-      const data = await api(adminKey, { action: 'ledger', cardNumber })
-      setLedger(data.entries)
+      await loadDetail(cardNumber)
     } catch (err) {
       setError(err.message)
     }
   }
 
   function copy(text) {
-    navigator.clipboard?.writeText(text).then(
-      () => setMessage('Copied.'),
-      () => window.prompt('Copy this:', text),
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(
+        () => {
+          setError('')
+          setMessage('Copied.')
+        },
+        () => window.prompt('Copy this:', text),
+      )
+    } else {
+      window.prompt('Copy this:', text)
+    }
+  }
+
+  function makeNewLink(c) {
+    if (!window.confirm('Make a new private link? The old link will stop working.')) return
+    run(
+      (d) => `New link for ${d.card.cardNumber} is ready.`,
+      { action: 'regenerate', cardNumber: c.cardNumber },
+      async (d) => {
+        setCreated({ cardNumber: d.card.cardNumber, label: d.card.label, link: linkFor(d.token) })
+        await loadDetail(c.cardNumber)
+      },
     )
   }
+
+  function saveEdit(c) {
+    const next = editing.number.trim().toUpperCase()
+    const body = { action: 'edit', cardNumber: c.cardNumber }
+    if (editing.label.trim() !== c.label) body.label = editing.label
+    if (next !== c.cardNumber) body.newCardNumber = next
+    run(
+      (d) => (!d.changed ? 'Nothing was changed.' : d.card.cardNumber !== c.cardNumber ? `Saved. The card number is now ${d.card.cardNumber}, so tell the customer.` : 'Saved.'),
+      body,
+      async (d) => {
+        setEditing(null)
+        if (d.card.cardNumber !== c.cardNumber) setOpen(d.card.cardNumber)
+        await loadDetail(d.card.cardNumber)
+      },
+    )
+  }
+
+  // Stamps, free drinks, undos and edits in one list, newest first.
+  const history = [
+    ...ledger.map((l) => ({ ...l, type: 'ledger', key: 'l' + l.id })),
+    ...edits.map((e) => ({ ...e, type: 'edit', key: 'e' + e.id })),
+  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || (a.type === 'edit' ? -1 : 1))
 
   return (
     <div className="admin-loyalty">
@@ -155,8 +213,8 @@ export default function AdminLoyalty({ adminKey }) {
       {created && (
         <div className="admin-loyalty-created">
           <p>
-            <b>{created.cardNumber}</b> for {created.label}. Send this private link to the customer on Instagram. It is shown only now; if
-            it is lost, use &ldquo;New link&rdquo; on the card.
+            <b>{created.cardNumber}</b> for {created.label}. Send this private link to the customer on Instagram. You can see and copy it
+            again any time by opening the card.
           </p>
           <input readOnly value={created.link} onFocus={(e) => e.target.select()} aria-label="Private card link" />
           <div className="admin-loyalty-btns">
@@ -202,18 +260,18 @@ export default function AdminLoyalty({ adminKey }) {
             <tbody>
               {cards.map((c) => (
                 <FragmentRow key={c.cardNumber}>
-                  <tr className={c.disabled ? 'is-disabled' : ''}>
-                    <td>
+                  <tr className={'admin-loyalty-cardrow' + (c.disabled ? ' is-disabled' : '')}>
+                    <td data-label="Card">
                       <b>{c.cardNumber}</b>
                     </td>
-                    <td>
+                    <td data-label="Name">
                       {c.label}
                       {c.disabled && <em> (disabled)</em>}
                     </td>
-                    <td>
+                    <td data-label="Stamps">
                       {c.balance} / {STAMPS_PER_REWARD}
                     </td>
-                    <td>
+                    <td data-label="Free drinks">
                       {c.rewardsReady > 0 ? <b className="admin-loyalty-ready">{c.rewardsReady} ready</b> : '—'} <small>({c.rewardsRedeemed} used)</small>
                     </td>
                     <td>
@@ -223,115 +281,209 @@ export default function AdminLoyalty({ adminKey }) {
                     </td>
                   </tr>
                   {open === c.cardNumber && (
-                    <tr>
+                    <tr className="admin-loyalty-detailrow">
                       <td colSpan={5} className="admin-loyalty-detail">
                         <div className="admin-loyalty-detail-grid">
-                        <div className="admin-loyalty-detail-card">
-                          <LoyaltyCardBack balance={c.balance} freshFrom={fresh && fresh.card === c.cardNumber ? fresh.from : null} />
-                        </div>
-                        <div className="admin-loyalty-detail-main">
-                        <div className="admin-loyalty-stamp">
-                          <label>
-                            Add a stamp from a paid order
-                            <select value={pick} onChange={(e) => setPick(e.target.value)}>
-                              <option value="">Choose a paid order…</option>
-                              {eligible.map((o) => (
-                                <option key={o.orderNumber} value={o.orderNumber}>
-                                  {o.orderNumber} · ₱{o.total} · {itemsText(o.items)} → {o.stamps} stamp{o.stamps === 1 ? '' : 's'}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            disabled={busy || !pick || c.disabled}
-                            onClick={() => {
-                              setFresh({ card: c.cardNumber, from: c.balance })
-                              run((d) => `${d.stamped} stamp${d.stamped === 1 ? '' : 's'} added to ${c.cardNumber}.`, { action: 'stamp', cardNumber: c.cardNumber, orderNumber: pick }, async () => {
-                                setPick('')
-                                const l = await api(adminKey, { action: 'ledger', cardNumber: c.cardNumber })
-                                setLedger(l.entries)
-                              })
-                            }}
-                          >
-                            Add stamp
-                          </button>
-                        </div>
-                        {eligible.length === 0 && <p className="admin-loyalty-hint">No paid orders are waiting for a stamp. Mark an order as paid on the Orders tab first.</p>}
-
-                        <div className="admin-loyalty-btns">
-                          <button
-                            type="button"
-                            className="btn btn-primary"
-                            disabled={busy || c.rewardsReady < 1 || c.disabled}
-                            onClick={() => {
-                              if (!window.confirm(`Give ${c.label} a free drink? This uses ${STAMPS_PER_REWARD} stamps.`)) return
-                              run(() => `Free drink given to ${c.cardNumber}.`, { action: 'redeem', cardNumber: c.cardNumber }, async () => {
-                                const l = await api(adminKey, { action: 'ledger', cardNumber: c.cardNumber })
-                                setLedger(l.entries)
-                              })
-                            }}
-                          >
-                            Give free drink
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-ghost"
-                            disabled={busy}
-                            onClick={() => {
-                              if (!window.confirm('Make a new private link? The old link will stop working.')) return
-                              run(
-                                (d) => `New link for ${d.card.cardNumber} ready below.`,
-                                { action: 'regenerate', cardNumber: c.cardNumber },
-                                (d) => setCreated({ cardNumber: d.card.cardNumber, label: d.card.label, link: linkFor(d.token) }),
-                              )
-                            }}
-                          >
-                            New link
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-ghost"
-                            disabled={busy}
-                            onClick={() => run(() => (c.disabled ? 'Card enabled.' : 'Card disabled.'), { action: c.disabled ? 'enable' : 'disable', cardNumber: c.cardNumber })}
-                          >
-                            {c.disabled ? 'Enable card' : 'Disable card'}
-                          </button>
-                        </div>
-
-                        <h4>History</h4>
-                        <ul className="admin-loyalty-ledger">
-                          {ledger.map((l) => (
-                            <li key={l.id}>
-                              <span>
-                                <b>{l.kind === 'stamp' ? `+${l.stamps} stamp${l.stamps === 1 ? '' : 's'}` : l.kind === 'redeem' ? 'Free drink' : 'Undone'}</b>
-                                {l.order_number ? ` · order ${l.order_number}` : ''}
-                                {l.staff ? ` · by ${l.staff}` : ''}
-                                {l.note ? ` · ${l.note}` : ''}
-                              </span>
-                              <time>{new Date(l.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</time>
-                              {(l.kind === 'stamp' || l.kind === 'redeem') && (
-                                <button
-                                  type="button"
-                                  className="admin-delete-btn"
-                                  disabled={busy}
-                                  onClick={() => {
-                                    if (!window.confirm('Undo this entry? It stays in the history as undone.')) return
-                                    run(() => 'Entry undone.', { action: 'void', entryId: l.id }, async () => {
-                                      const x = await api(adminKey, { action: 'ledger', cardNumber: c.cardNumber })
-                                      setLedger(x.entries)
-                                    })
-                                  }}
-                                >
-                                  Undo
-                                </button>
+                          <div className="admin-loyalty-detail-card">
+                            <LoyaltyCardBack balance={c.balance} freshFrom={fresh && fresh.card === c.cardNumber ? fresh.from : null} />
+                          </div>
+                          <div className="admin-loyalty-detail-main">
+                            <div className="admin-loyalty-link">
+                              <p className="admin-loyalty-link-title">Customer&apos;s private link</p>
+                              {!link || link.cardNumber !== c.cardNumber ? (
+                                <p className="admin-loyalty-hint">Loading…</p>
+                              ) : link.token ? (
+                                <>
+                                  <div className="admin-loyalty-link-row">
+                                    <input
+                                      readOnly
+                                      value={linkFor(link.token)}
+                                      onFocus={(e) => e.target.select()}
+                                      aria-label="This card's private link"
+                                    />
+                                    <button type="button" className="btn btn-primary admin-small" onClick={() => copy(linkFor(link.token))}>
+                                      Copy link
+                                    </button>
+                                  </div>
+                                  <p className="admin-loyalty-hint">
+                                    Send this to the customer on Instagram. Anyone who has it can see this card, so only send it to them.
+                                    {c.disabled ? ' This card is disabled, so the link will not work until you enable it.' : ''}
+                                  </p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="admin-loyalty-hint">{LINK_PROBLEM[link.reason] || LINK_PROBLEM.unreadable}</p>
+                                  <div className="admin-loyalty-btns">
+                                    <button type="button" className="btn btn-primary admin-small" disabled={busy} onClick={() => makeNewLink(c)}>
+                                      New link
+                                    </button>
+                                  </div>
+                                </>
                               )}
-                            </li>
-                          ))}
-                          {ledger.length === 0 && <li>No activity yet.</li>}
-                        </ul>
-                        </div>
+                            </div>
+
+                            <div className="admin-loyalty-stamp">
+                              <label>
+                                Add a stamp from a paid order
+                                <select value={pick} onChange={(e) => setPick(e.target.value)}>
+                                  <option value="">Choose a paid order…</option>
+                                  {eligible.map((o) => (
+                                    <option key={o.orderNumber} value={o.orderNumber}>
+                                      {o.orderNumber} · ₱{o.total} · {itemsText(o.items)} → {o.stamps} stamp{o.stamps === 1 ? '' : 's'}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={busy || !pick || c.disabled}
+                                onClick={() => {
+                                  setFresh({ card: c.cardNumber, from: c.balance })
+                                  run(
+                                    (d) => `${d.stamped} stamp${d.stamped === 1 ? '' : 's'} added to ${c.cardNumber}.`,
+                                    { action: 'stamp', cardNumber: c.cardNumber, orderNumber: pick },
+                                    async () => {
+                                      setPick('')
+                                      await loadDetail(c.cardNumber, { withLink: false })
+                                    },
+                                  )
+                                }}
+                              >
+                                Add stamp
+                              </button>
+                            </div>
+                            {eligible.length === 0 && <p className="admin-loyalty-hint">No paid orders are waiting for a stamp. Mark an order as paid on the Orders tab first.</p>}
+
+                            <div className="admin-loyalty-btns">
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                disabled={busy || c.rewardsReady < 1 || c.disabled}
+                                onClick={() => {
+                                  if (!window.confirm(`Give ${c.label} a free drink? This uses ${STAMPS_PER_REWARD} stamps.`)) return
+                                  run(() => `Free drink given to ${c.cardNumber}.`, { action: 'redeem', cardNumber: c.cardNumber }, () => loadDetail(c.cardNumber, { withLink: false }))
+                                }}
+                              >
+                                Give free drink
+                              </button>
+                              <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => makeNewLink(c)}>
+                                New link
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                disabled={busy}
+                                onClick={() => setEditing(editing && editing.card === c.cardNumber ? null : { card: c.cardNumber, label: c.label, number: c.cardNumber })}
+                              >
+                                Edit name or number
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-ghost"
+                                disabled={busy}
+                                onClick={() => run(() => (c.disabled ? 'Card enabled.' : 'Card disabled.'), { action: c.disabled ? 'enable' : 'disable', cardNumber: c.cardNumber })}
+                              >
+                                {c.disabled ? 'Enable card' : 'Disable card'}
+                              </button>
+                            </div>
+
+                            {editing && editing.card === c.cardNumber && (
+                              <form
+                                className="admin-loyalty-edit"
+                                onSubmit={(e) => {
+                                  e.preventDefault()
+                                  saveEdit(c)
+                                }}
+                              >
+                                <label>
+                                  Name or Instagram handle
+                                  <input
+                                    value={editing.label}
+                                    maxLength={60}
+                                    onChange={(e) => setEditing({ ...editing, label: e.target.value })}
+                                    aria-label="Customer name"
+                                  />
+                                </label>
+                                <label>
+                                  Card number
+                                  <input
+                                    value={editing.number}
+                                    maxLength={7}
+                                    autoCapitalize="characters"
+                                    spellCheck="false"
+                                    onChange={(e) => setEditing({ ...editing, number: e.target.value.toUpperCase() })}
+                                    aria-label="Card number"
+                                  />
+                                </label>
+                                {!CARD_NUMBER_PATTERN.test(editing.number.trim()) && (
+                                  <p className="admin-error">A card number looks like LC-7K3Q: LC- and 4 letters or numbers (no O, I, L, 0 or 1).</p>
+                                )}
+                                {editing.number.trim() !== c.cardNumber && CARD_NUMBER_PATTERN.test(editing.number.trim()) && (
+                                  <p className="admin-loyalty-hint">
+                                    The old number {c.cardNumber} stops working at once. The customer&apos;s link, stamps and history stay the same, but tell
+                                    them their new number.
+                                  </p>
+                                )}
+                                <div className="admin-loyalty-btns">
+                                  <button
+                                    type="submit"
+                                    className="btn btn-primary admin-small"
+                                    disabled={
+                                      busy ||
+                                      !editing.label.trim() ||
+                                      !CARD_NUMBER_PATTERN.test(editing.number.trim()) ||
+                                      (editing.label.trim() === c.label && editing.number.trim() === c.cardNumber)
+                                    }
+                                  >
+                                    Save changes
+                                  </button>
+                                  <button type="button" className="btn btn-ghost admin-small" onClick={() => setEditing(null)}>
+                                    Cancel
+                                  </button>
+                                </div>
+                              </form>
+                            )}
+
+                            <h4>History</h4>
+                            <ul className="admin-loyalty-ledger">
+                              {history.map((h) =>
+                                h.type === 'edit' ? (
+                                  <li key={h.key}>
+                                    <span>
+                                      <b>{h.field === 'name' ? 'Name changed' : 'Card number changed'}</b> · {h.old_value} → {h.new_value}
+                                      {h.staff ? ` · by ${h.staff}` : ''}
+                                    </span>
+                                    <time>{new Date(h.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</time>
+                                  </li>
+                                ) : (
+                                  <li key={h.key}>
+                                    <span>
+                                      <b>{h.kind === 'stamp' ? `+${h.stamps} stamp${h.stamps === 1 ? '' : 's'}` : h.kind === 'redeem' ? 'Free drink' : 'Undone'}</b>
+                                      {h.order_number ? ` · order ${h.order_number}` : ''}
+                                      {h.staff ? ` · by ${h.staff}` : ''}
+                                      {h.note ? ` · ${h.note}` : ''}
+                                    </span>
+                                    <time>{new Date(h.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</time>
+                                    {(h.kind === 'stamp' || h.kind === 'redeem') && (
+                                      <button
+                                        type="button"
+                                        className="admin-delete-btn"
+                                        disabled={busy}
+                                        onClick={() => {
+                                          if (!window.confirm('Undo this entry? It stays in the history as undone.')) return
+                                          run(() => 'Entry undone.', { action: 'void', entryId: h.id }, () => loadDetail(c.cardNumber, { withLink: false }))
+                                        }}
+                                      >
+                                        Undo
+                                      </button>
+                                    )}
+                                  </li>
+                                ),
+                              )}
+                              {history.length === 0 && <li>No activity yet.</li>}
+                            </ul>
+                          </div>
                         </div>
                       </td>
                     </tr>

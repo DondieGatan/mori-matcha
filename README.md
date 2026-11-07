@@ -50,7 +50,7 @@ Browser (React 19 + Vite, two HTML entries: index.html and party-cart.html)
    ├── /api/orders/:number  PATCH status/payment or restore, DELETE to trash or purge (admin key)
    ├── /api/availability    GET per-drink status (public)   PATCH (admin key)
    ├── /api/reviews         Google Places reviews (server-side key)
-   ├── /api/loyalty         POST: a customer views their card (secret link); staff stamp, redeem, void (admin key)
+   ├── /api/loyalty         POST: a customer views their card (secret link); staff stamp, redeem, void, see a link, edit a name or number (admin key)
    └── /api/assistant       POST: customer-service chat (Gemini, with a rule-based fallback)
           │
           └── Vercel serverless functions (Node) ── Neon Postgres (orders, availability)
@@ -93,7 +93,9 @@ Stamps exist only on the server and can only be added by staff with the admin ke
 phone to edit. The rules (9 stamps, the 10th drink free) live in `src/data/loyalty.js`; change `CARD_SLOTS` to change the card.
 
 - **A card** is a row with a short card number (`LC-7K3Q`) and a secret link, `/card#<22 random characters>` (128 bits).
-  Only a SHA-256 hash of the secret is stored, so a database leak does not leak links. The secret sits after the `#`, which
+  Customers' links are checked against a SHA-256 hash. So that staff can see and copy a card's link again, an encrypted copy is also
+  kept (AES-256-GCM, with a key derived from the admin key), so a database leak on its own does not leak links; changing the admin
+  key makes saved copies unreadable and staff then press "New link". The secret sits after the `#`, which
   browsers never send to a server, to other sites in the `Referer` header, or to analytics (the analytics calls strip it too).
   The page is `noindex` and `no-referrer`, and the API takes the secret in a POST body so it never lands in a log or a URL.
 - **A stamp** needs an order the café has marked **paid**, is added by staff from the admin page, and an order can be stamped
@@ -106,7 +108,8 @@ phone to edit. The rules (9 stamps, the 10th drink free) live in `src/data/loyal
 - **Guessing and brute force**: wrong admin keys are rate limited and compared in constant time; link lookups are rate limited
   (best effort per serverless instance); every malformed or unknown link looks the same, "not found".
 
-`npm test` runs `tests/loyalty.test.mjs`: 31 tests against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
+Staff can also fix a typo in a customer's name or the card number (the link, stamps and history are untouched, and each change is written
+to an edit history). `npm test` runs `tests/loyalty.test.mjs`: 44 tests against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
 double stamping, racing requests, replayed redemptions, guessed or replaced links, injection, editing history).
 
 ## Structure
