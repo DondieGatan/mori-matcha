@@ -135,7 +135,7 @@ function PartyTeaser() {
       <div>
         <p className="eyebrow">Hosting an event?</p>
         <h3>Mori Matcha Party Cart</h3>
-        <p>A fresh matcha bar for birthdays, debuts and school events &mdash; packages from {formatPeso(3000)}.</p>
+        <p>A fresh matcha bar for birthdays, debuts and school events &mdash; packages from {formatPeso(3500)}.</p>
       </div>
       <a href="/party-cart" className="btn btn-primary">
         View Party Cart
