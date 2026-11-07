@@ -52,14 +52,14 @@ export function cleanReply(text) {
     .replace(/^\s*[-•]\s+/gm, '')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 700)
+    .slice(0, 1100)
 }
 
 async function askModel(history, facts, apiKey) {
   const body = {
     systemInstruction: { parts: [{ text: SYSTEM_PROMPT + facts }] },
     contents: history.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.text }] })),
-    generationConfig: { temperature: 0.4, maxOutputTokens: 300, thinkingConfig: { thinkingBudget: 0 } },
+    generationConfig: { temperature: 0.4, maxOutputTokens: 600, thinkingConfig: { thinkingBudget: 0 } },
   }
   for (const model of MODELS) {
     const controller = new AbortController()
