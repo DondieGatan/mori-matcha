@@ -230,10 +230,18 @@ const INTENTS = [
     },
   },
   {
+    id: 'overview',
+    test: (t) => /\b(tell me (more|everything)|more (info|information|details)|full details|everything|overview|in detail|all the details)\b/.test(t) && !/\b(party|prices?|how much|hours|open|order|ordering|website|site|menu|drinks?)\b/.test(t),
+    answer: (t, s, date) =>
+      `${ABOUT} ${RITUAL.split('.')[0]}. You order on this website: pick a drink, sweetness and milk, add it to the cart, and send the order to us on Instagram, where we confirm it and share payment details. ` +
+      `We are at ${LOCATION}, and ${openStatus(date).replace(/^Open/, 'we are open').replace(/^Closed/, 'we are closed')}. ` +
+      `We also run a Party Cart for events, with packages from ${money(PARTY_PACKAGES[0].price)}. Ask me about any of these for more detail.`,
+  },
+  {
     id: 'about',
     test: (t) =>
       /\b(about (mori|the (cafe|café|shop|place|business|store)|your (cafe|café|story|shop|place)|yourself|you guys)|what('s| is) (mori|this (cafe|café|place|shop|business)|the cafe)|who (are|is) (you|mori)|your story|history|background|all about|what do you do|tell me (more )?about (mori|yourself|the cafe|your))\b/.test(t) &&
-      !/\b(party|price|how much|hours|open)\b/.test(t),
+      !/\b(party|prices?|how much|hours|open)\b/.test(t),
     answer: () => `${ABOUT} ${RITUAL.split('.')[0]}. We are at ${LOCATION}, and you can order and chat with us on Instagram.`,
   },
   {
@@ -388,6 +396,10 @@ export function ruleAnswer(message, statuses = {}, date = new Date()) {
   if (hits.includes('about')) hits = ['about', ...hits.filter((id) => id === 'menu' || id === 'hours' || id === 'location')].slice(0, 2)
   // More specific ordering topics replace the general ordering steps.
   if (['orderstatus', 'payment', 'delivery', 'website', 'party'].some((id) => hits.includes(id))) hits = hits.filter((id) => id !== 'order')
+
+  if (hits.includes('overview')) hits = ['overview']
+  // Nothing specific matched but the customer is clearly asking about the café itself ("mori matcha story").
+  if (hits.length === 0 && /\b(mori|matcha|cafe|café|shop|story|you guys|your place)\b/.test(t)) hits = ['about']
 
   if (hits.length === 0) return FALLBACK
   return hits
