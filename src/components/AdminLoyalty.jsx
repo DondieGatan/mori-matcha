@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { STAMPS_PER_REWARD } from '../data/loyalty'
+import { LoyaltyCardBack } from './LoyaltyCardArt'
 
 // Staff-only loyalty panel for the admin page. Every button here calls /api/loyalty with the admin key; the server does the
 // checking (paid order, one stamp per order, enough stamps for a reward), so nothing here can be tampered with from a browser.
@@ -41,6 +42,7 @@ export default function AdminLoyalty({ adminKey }) {
   const [open, setOpen] = useState(null) // card number whose panel is open
   const [pick, setPick] = useState('') // order number chosen to stamp
   const [ledger, setLedger] = useState([])
+  const [fresh, setFresh] = useState(null) // { card, from }: the stamp card shows stamps after `from` coming down
 
   const refresh = useCallback(
     async (query = q) => {
@@ -87,12 +89,14 @@ export default function AdminLoyalty({ adminKey }) {
   const linkFor = (token) => `${window.location.origin}/card#${token}`
 
   async function openCard(cardNumber) {
+    setFresh(null)
     if (open === cardNumber) {
       setOpen(null)
       return
     }
     setOpen(cardNumber)
     setPick('')
+    setFresh(null)
     try {
       const data = await api(adminKey, { action: 'ledger', cardNumber })
       setLedger(data.entries)
@@ -221,6 +225,11 @@ export default function AdminLoyalty({ adminKey }) {
                   {open === c.cardNumber && (
                     <tr>
                       <td colSpan={5} className="admin-loyalty-detail">
+                        <div className="admin-loyalty-detail-grid">
+                        <div className="admin-loyalty-detail-card">
+                          <LoyaltyCardBack balance={c.balance} freshFrom={fresh && fresh.card === c.cardNumber ? fresh.from : null} />
+                        </div>
+                        <div className="admin-loyalty-detail-main">
                         <div className="admin-loyalty-stamp">
                           <label>
                             Add a stamp from a paid order
@@ -237,13 +246,14 @@ export default function AdminLoyalty({ adminKey }) {
                             type="button"
                             className="btn btn-primary"
                             disabled={busy || !pick || c.disabled}
-                            onClick={() =>
+                            onClick={() => {
+                              setFresh({ card: c.cardNumber, from: c.balance })
                               run((d) => `${d.stamped} stamp${d.stamped === 1 ? '' : 's'} added to ${c.cardNumber}.`, { action: 'stamp', cardNumber: c.cardNumber, orderNumber: pick }, async () => {
                                 setPick('')
                                 const l = await api(adminKey, { action: 'ledger', cardNumber: c.cardNumber })
                                 setLedger(l.entries)
                               })
-                            }
+                            }}
                           >
                             Add stamp
                           </button>
@@ -321,6 +331,8 @@ export default function AdminLoyalty({ adminKey }) {
                           ))}
                           {ledger.length === 0 && <li>No activity yet.</li>}
                         </ul>
+                        </div>
+                        </div>
                       </td>
                     </tr>
                   )}

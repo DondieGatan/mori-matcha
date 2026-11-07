@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Header from '../components/Header'
 import Footer from '../components/Footer'
 import BackToTop from '../components/BackToTop'
@@ -57,6 +57,7 @@ export default function CardPage() {
   const [state, setState] = useState(token ? 'loading' : 'none') // loading | ready | notfound | busy | error | none
   const [card, setCard] = useState(null)
   const [freshFrom, setFreshFrom] = useState(null)
+  const lastBalance = useRef(null)
 
   const load = useCallback(
     async (quiet = false) => {
@@ -81,7 +82,11 @@ export default function CardPage() {
         if (!res.ok) throw new Error('bad status')
         const data = await res.json()
         const seen = Number(readStore(SEEN_KEY + ':' + data.card.cardNumber))
-        setFreshFrom(Number.isFinite(seen) && readStore(SEEN_KEY + ':' + data.card.cardNumber) !== '' && data.card.balance > seen ? seen : null)
+        const fresh = Number.isFinite(seen) && readStore(SEEN_KEY + ':' + data.card.cardNumber) !== '' && data.card.balance > seen ? seen : null
+        // A second look at the same balance (for example the tab being switched to right after it opened) must not cut
+        // short the stamps that are still coming down.
+        setFreshFrom((prev) => (fresh !== null ? fresh : lastBalance.current === data.card.balance ? prev : null))
+        lastBalance.current = data.card.balance
         writeStore(SEEN_KEY + ':' + data.card.cardNumber, String(data.card.balance))
         writeStore(TOKEN_KEY, token)
         writeStore(NUMBER_KEY, data.card.cardNumber)
