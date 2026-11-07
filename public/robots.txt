@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /card
+Disallow: /admin
 
 Sitemap: https://mori-matcha-inky.vercel.app/sitemap.xml

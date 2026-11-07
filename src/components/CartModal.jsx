@@ -66,6 +66,13 @@ export default function CartModal({ isOpen, cart, orderNumber, cartTotal, onClos
     if (cart.length === 0) return
     const lines = buildOrderLines(cart)
     lines.push('Total: ' + formatPeso(cartTotal))
+    let cardNumber = ''
+    try {
+      cardNumber = localStorage.getItem('mori-card-number') || ''
+    } catch (e) {
+      // storage unavailable: just no card line
+    }
+    if (cardNumber) lines.push('Loyalty card: ' + cardNumber)
     const text = "Hi Mori Matcha! I'd like to order (Order #" + orderNumber + '):\n\n' + lines.join('\n')
 
     function showCopied() {
@@ -118,6 +125,7 @@ export default function CartModal({ isOpen, cart, orderNumber, cartTotal, onClos
             <li>Tap "Send Order via Instagram" and paste your order into the chat.</li>
             <li>We'll reply with GCash, BDO, Maya, or cash details to confirm.</li>
             <li>Once confirmed, we'll start preparing your drink!</li>
+            <li>Have a loyalty card? We add your stamps once your order is paid.</li>
           </ol>
         </div>
         <div className="cart-items">

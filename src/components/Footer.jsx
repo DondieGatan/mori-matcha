@@ -1,7 +1,9 @@
 export default function Footer() {
   return (
     <footer className="footer">
-      <p>MORI MATCHA &copy; 2026</p>
+      <p>
+        MORI MATCHA &copy; 2026 &middot; <a href="/card">My loyalty card</a>
+      </p>
     </footer>
   )
 }

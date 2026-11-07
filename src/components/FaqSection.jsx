@@ -30,6 +30,16 @@ const FAQ_ITEMS = [
     ),
   },
   {
+    question: 'Do you have a loyalty card?',
+    answer: (
+      <>
+        Yes. Every drink in a paid order earns a stamp, and after 9 stamps your 10th drink is free. Ask us for your card on Instagram and we'll send you a
+        private link to keep it on your phone, then <a href="/card">view your card</a> any time. Stamps are added by our team, so just quote your card number
+        when you order.
+      </>
+    ),
+  },
+  {
     question: 'Do you offer delivery?',
     answer: "Message us on Instagram with your order and location and we'll let you know the best way to get it to you.",
   },

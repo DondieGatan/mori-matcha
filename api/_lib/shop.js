@@ -15,6 +15,7 @@ import {
   formatPeso,
 } from '../../src/data/menu.js'
 import { PARTY_PACKAGES, PARTY_INCLUDED, PARTY_ADDONS, PARTY_NOTES, PARTY_VARIETIES } from '../../src/data/partyCart.js'
+import { CARD_SLOTS, STAMPS_PER_REWARD, REWARD_TEXT } from '../../src/data/loyalty.js'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const LOCATION = 'Golden City Subdivision, Anabu 2-F, Imus, Cavite'
@@ -102,7 +103,7 @@ const WEBSITE =
   `New drinks carry a "New" badge, and a drink that is unavailable or coming soon is greyed out on the menu; this updates automatically every few seconds. ` +
   `A View Cart button stays on screen. The cart is saved on your own device. The website does not take payment and does not place orders by itself: ` +
   `from the cart you copy your order and send it to the café on Instagram, and the café confirms it there. ` +
-  `There is also a Party Cart page for events, and the website can be installed on a phone like an app. ` +
+  `There is also a Party Cart page for events, a Loyalty Card page where customers see their stamps, and the website can be installed on a phone like an app. ` +
   `Behind the scenes the café team uses a private staff dashboard to manage incoming orders and which drinks are available.`
 
 // A shorter version for the keyword fallback, since replies are read aloud.
@@ -128,6 +129,12 @@ const ASSISTANT =
   `I am Mori, the café's website assistant. You can type your question or tap the microphone to ask out loud where your browser supports it. ` +
   `Tap Listen under any answer to hear it read aloud, or switch on voice replies at the top of the chat. I can answer questions about the café, the menu, prices, hours, ordering and party carts. ` +
   `I cannot place orders or see your order.`
+
+const LOYALTY =
+  `The café has a digital loyalty card. Every drink in a paid order earns one stamp, and after ${STAMPS_PER_REWARD} stamps the ${CARD_SLOTS}th drink is free: ${REWARD_TEXT}. ` +
+  `The card lives on the customer's phone at a private link that the café sends on Instagram, and it can be opened from the Loyalty Card page on the website. ` +
+  `Stamps are added only by the café team once an order is paid, so customers should quote their card number when they order. ` +
+  `Customers cannot add or change stamps themselves, and the link should not be shared. To get a card, message the café on Instagram.`
 
 const BUILT_BY = 'The website and this assistant were built by Dondie Godwin Gatan.'
 
@@ -169,6 +176,8 @@ PAYMENT: after the order is sent on Instagram the café replies with GCash, BDO,
 DELIVERY: the customer should message the café on Instagram with the order and location, and the café says how it can get there. There is no fixed delivery fee or area published on the site.
 
 HOW THE WEBSITE WORKS: ${WEBSITE}
+
+LOYALTY CARD: ${LOYALTY}
 
 THIS ASSISTANT: ${ASSISTANT}
 
@@ -284,8 +293,16 @@ const INTENTS = [
     },
   },
   {
+    id: 'loyalty',
+    test: (t) => /\b(loyalty|stamp|stamps|stamped|reward|rewards|points|free drink|membership|member|punch card|card number|my card)\b/.test(t),
+    answer: (t) =>
+      /\b(how many|collect|need|free|reward)\b/.test(t)
+        ? `Every drink in a paid order earns one stamp. Collect ${STAMPS_PER_REWARD} stamps and your ${CARD_SLOTS}th drink is free: ${REWARD_TEXT}. Our team adds the stamps once your order is paid, so quote your card number when you order.`
+        : LOYALTY,
+  },
+  {
     id: 'payment',
-    test: (t) => /\b(pay|paying|payment|gcash|maya|bdo|bank|cash|bayad|card|credit)\b/.test(t),
+    test: (t) => /\b(pay|paying|payment|gcash|maya|bdo|bank|cash|bayad|credit|debit)\b/.test(t) && !/\bloyalty\b/.test(t),
     answer: () =>
       'You pay after we confirm your order. Send your order through Instagram and we will reply with GCash, BDO, Maya or cash details, whichever is easiest for you. The website itself does not take payment.',
   },
@@ -395,7 +412,9 @@ export function ruleAnswer(message, statuses = {}, date = new Date()) {
   // "What is Mori Matcha about" is a broad question on its own; add at most one related answer to it.
   if (hits.includes('about')) hits = ['about', ...hits.filter((id) => id === 'menu' || id === 'hours' || id === 'location')].slice(0, 2)
   // More specific ordering topics replace the general ordering steps.
-  if (['orderstatus', 'payment', 'delivery', 'website', 'party'].some((id) => hits.includes(id))) hits = hits.filter((id) => id !== 'order')
+  if (['orderstatus', 'payment', 'delivery', 'website', 'party', 'loyalty'].some((id) => hits.includes(id))) hits = hits.filter((id) => id !== 'order')
+  // A loyalty question is answered on its own; it often also mentions drinks, orders or payment in passing.
+  if (hits.includes('loyalty')) hits = ['loyalty']
 
   if (hits.includes('overview')) hits = ['overview']
   // Nothing specific matched but the customer is clearly asking about the café itself ("mori matcha story").

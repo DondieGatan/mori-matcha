@@ -3,6 +3,7 @@ import Header from './components/Header'
 import Hero from './components/Hero'
 import RitualStrip from './components/RitualStrip'
 import MenuSection from './components/MenuSection'
+import LoyaltySection from './components/LoyaltySection'
 import AboutSection from './components/AboutSection'
 import VisitSection from './components/VisitSection'
 import FaqSection from './components/FaqSection'
@@ -36,6 +37,7 @@ export default function App() {
         <Hero />
         <RitualStrip />
         <MenuSection onOpenSugarModal={setSugarModalDrink} unavailableKeys={unavailableKeys} comingSoonKeys={comingSoonKeys} />
+        <LoyaltySection />
         <AboutSection />
         <VisitSection />
         <FaqSection />
