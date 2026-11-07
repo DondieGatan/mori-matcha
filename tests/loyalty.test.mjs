@@ -563,3 +563,49 @@ test('a disabled card can still be corrected, and editing never changes the bala
   assert.equal(Number(rows[0].balance), 4)
   assert.equal(Number(rows[0].total), 4)
 })
+
+// ---- who disabled a card, and when ---------------------------------------------------------------------------------------
+test('disabling and enabling a card is recorded with who did it, once per real change', async () => {
+  const { number } = await newCard('@jade')
+  assert.equal((await call({ action: 'disable', cardNumber: number, staff: 'Ana' })).code, 200)
+  assert.equal((await call({ action: 'disable', cardNumber: number, staff: 'Ben' })).code, 200) // already disabled: nothing to record
+  assert.equal((await call({ action: 'enable', cardNumber: number, staff: 'Ben' })).code, 200)
+  assert.equal((await call({ action: 'enable', cardNumber: number, staff: 'Cy' })).code, 200) // already enabled
+  const l = await call({ action: 'ledger', cardNumber: number })
+  const status = l.body.edits.filter((e) => e.field === 'status').map((e) => [e.old_value, e.new_value, e.staff])
+  assert.deepEqual(status, [['disabled', 'enabled', 'Ben'], ['enabled', 'disabled', 'Ana']])
+  assert.equal((await call({ action: 'disable', cardNumber: 'LC-ZZZZ' })).code, 404)
+})
+
+test('a disabled card really is off, and its stamps are untouched by being disabled and enabled', async () => {
+  const { number, token } = await newCard()
+  await fill(number, 3)
+  await call({ action: 'disable', cardNumber: number, staff: 'Ana' })
+  assert.equal((await call({ action: 'view', token }, { key: null })).code, 404)
+  await call({ action: 'enable', cardNumber: number, staff: 'Ana' })
+  const v = await call({ action: 'view', token }, { key: null })
+  assert.equal(v.code, 200)
+  assert.equal(v.body.card.balance, 3)
+})
+
+test('making a new link is recorded with who did it', async () => {
+  const { number } = await newCard()
+  await call({ action: 'regenerate', cardNumber: number, staff: 'Ana' })
+  const l = await call({ action: 'ledger', cardNumber: number })
+  assert.deepEqual(l.body.edits.map((e) => [e.field, e.new_value, e.staff]), [['link', 'new link made', 'Ana']])
+})
+
+test('a database made before status changes were recorded is upgraded in place', async () => {
+  const { number } = await newCard()
+  // put the table back the way it was when it only accepted name and number changes
+  await db.exec(`ALTER TABLE loyalty_edits DROP CONSTRAINT IF EXISTS loyalty_edits_field_ok`)
+  await db.exec(`ALTER TABLE loyalty_edits DROP CONSTRAINT IF EXISTS loyalty_edits_field_check`)
+  await db.exec(`ALTER TABLE loyalty_edits ADD CONSTRAINT loyalty_edits_field_check CHECK (field IN ('name', 'number'))`)
+  await assert.rejects(db.query(`INSERT INTO loyalty_edits (card_id, field) VALUES (1, 'status')`))
+  // a fresh server instance (it has not checked the tables yet) upgrades it the first time it is used
+  const sql2 = (...args) => sql(...args)
+  setSqlForTests(sql2)
+  assert.equal((await call({ action: 'disable', cardNumber: number, staff: 'Ana' })).code, 200)
+  assert.equal((await call({ action: 'edit', cardNumber: number, label: 'Still works' })).code, 200)
+  assert.equal((await call({ action: 'ledger', cardNumber: number })).body.edits.length, 2)
+})

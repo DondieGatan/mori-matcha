@@ -76,9 +76,9 @@ export default async function handler(req, res) {
       case 'edit':
         return send(res, await loyalty.editCard(sql, body))
       case 'disable':
-        return send(res, await loyalty.setCardDisabled(sql, { cardNumber: body.cardNumber, disabled: true }))
+        return send(res, await loyalty.setCardDisabled(sql, { cardNumber: body.cardNumber, disabled: true, staff: body.staff }))
       case 'enable':
-        return send(res, await loyalty.setCardDisabled(sql, { cardNumber: body.cardNumber, disabled: false }))
+        return send(res, await loyalty.setCardDisabled(sql, { cardNumber: body.cardNumber, disabled: false, staff: body.staff }))
       default:
         return res.status(400).json({ error: 'Unknown action' })
     }

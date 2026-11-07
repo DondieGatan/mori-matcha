@@ -48,13 +48,27 @@ export async function ensureTables(sql) {
     CREATE TABLE IF NOT EXISTS loyalty_edits (
       id SERIAL PRIMARY KEY,
       card_id INTEGER NOT NULL REFERENCES loyalty_cards(id),
-      field TEXT NOT NULL CHECK (field IN ('name', 'number')),
+      field TEXT NOT NULL CHECK (field IN ('name', 'number', 'status', 'link')),
       old_value TEXT,
       new_value TEXT,
       staff TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `
+  // A database that made this table earlier only allowed name and number changes; widen what it accepts.
+  try {
+    await sql`
+      DO $$ BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'loyalty_edits_field_ok') THEN
+          ALTER TABLE loyalty_edits DROP CONSTRAINT IF EXISTS loyalty_edits_field_check;
+          ALTER TABLE loyalty_edits ADD CONSTRAINT loyalty_edits_field_ok CHECK (field IN ('name', 'number', 'status', 'link'));
+        END IF;
+      END $$
+    `
+  } catch (err) {
+    // two cold starts can race to add the same rule; the one that loses can ignore it
+    if (!err || !['42710', '40P01', '23505'].includes(err.code)) throw err
+  }
   await sql`CREATE INDEX IF NOT EXISTS loyalty_edits_card ON loyalty_edits (card_id, id DESC)`
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS loyalty_one_stamp_per_order ON loyalty_ledger (order_number) WHERE kind = 'stamp'`
   await sql`CREATE UNIQUE INDEX IF NOT EXISTS loyalty_one_void_per_entry ON loyalty_ledger (voids_id) WHERE kind = 'void'`
@@ -335,27 +349,51 @@ export async function voidEntry(sql, { entryId, staff, note }) {
   }
 }
 
-// A new secret link for a customer who lost theirs. The old link stops working at once.
-export async function regenerateLink(sql, { cardNumber }) {
+// A new secret link for a customer who lost theirs. The old link stops working at once, and the change is recorded.
+export async function regenerateLink(sql, { cardNumber, staff }) {
   const number = normalizeCardNumber(cardNumber)
   if (!number) return fail(400, 'That is not a valid card number')
   await ensureTables(sql)
   const token = newToken()
   const { rows } = await sql`
-    UPDATE loyalty_cards SET token_hash = ${hashToken(token)}, token_enc = ${sealToken(token)} WHERE card_number = ${number} AND disabled_at IS NULL
-    RETURNING card_number, label
+    WITH upd AS (
+      UPDATE loyalty_cards SET token_hash = ${hashToken(token)}, token_enc = ${sealToken(token)}
+      WHERE card_number = ${number} AND disabled_at IS NULL
+      RETURNING id, card_number, label
+    ), log AS (
+      INSERT INTO loyalty_edits (card_id, field, old_value, new_value, staff)
+      SELECT id, 'link', 'old link', 'new link made', ${clean(staff, 40) || null}::text FROM upd
+      RETURNING id
+    )
+    SELECT card_number, label FROM upd
   `
   if (rows.length === 0) return fail(404, 'No active card with that number')
   return { ok: true, card: { cardNumber: rows[0].card_number, label: rows[0].label }, token }
 }
 
-export async function setCardDisabled(sql, { cardNumber, disabled }) {
+// Turn a card off (its link and number stop working, stamps and history stay) or back on. Every real change is recorded with
+// who did it and when; asking for the state it is already in changes and records nothing.
+export async function setCardDisabled(sql, { cardNumber, disabled, staff }) {
   const number = normalizeCardNumber(cardNumber)
   if (!number) return fail(400, 'That is not a valid card number')
   await ensureTables(sql)
-  const { rows } = disabled
-    ? await sql`UPDATE loyalty_cards SET disabled_at = COALESCE(disabled_at, now()) WHERE card_number = ${number} RETURNING card_number`
-    : await sql`UPDATE loyalty_cards SET disabled_at = NULL WHERE card_number = ${number} RETURNING card_number`
+  const want = Boolean(disabled)
+  const { rows } = await sql`
+    WITH cur AS (
+      SELECT id, disabled_at IS NOT NULL AS was FROM loyalty_cards WHERE card_number = ${number}
+    ), upd AS (
+      UPDATE loyalty_cards c
+      SET disabled_at = CASE WHEN ${want}::boolean THEN COALESCE(c.disabled_at, now()) ELSE NULL END
+      FROM cur WHERE c.id = cur.id
+      RETURNING c.id
+    ), log AS (
+      INSERT INTO loyalty_edits (card_id, field, old_value, new_value, staff)
+      SELECT cur.id, 'status', CASE WHEN cur.was THEN 'disabled' ELSE 'enabled' END, CASE WHEN ${want}::boolean THEN 'disabled' ELSE 'enabled' END, ${clean(staff, 40) || null}::text
+      FROM cur WHERE cur.was <> ${want}::boolean
+      RETURNING id
+    )
+    SELECT id FROM upd
+  `
   if (rows.length === 0) return fail(404, 'No card with that number')
   return { ok: true }
 }
