@@ -13,6 +13,7 @@ import SugarModal from './components/SugarModal'
 import CartModal from './components/CartModal'
 import CartFab from './components/CartFab'
 import BackToTop from './components/BackToTop'
+import Assistant from './components/Assistant'
 import { useCart } from './hooks/useCart'
 import { useAvailability } from './hooks/useAvailability'
 
@@ -61,6 +62,7 @@ export default function App() {
         onOpenCart={() => setIsCartOpen(true)}
       />
       <BackToTop />
+      <Assistant cartCount={cart.cartCount} />
     </>
   )
 }
