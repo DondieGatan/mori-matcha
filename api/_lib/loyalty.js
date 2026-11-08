@@ -380,13 +380,13 @@ export async function voidEntry(sql, { entryId, staff, note }) {
     if (rows.length === 0) {
       const { rows: e } = await sql`SELECT kind FROM loyalty_ledger WHERE id = ${id}::int`
       if (e.length === 0 || e[0].kind === 'void') return fail(404, 'No stamp or reward with that number')
-      return fail(409, 'That entry has already been undone')
+      return fail(409, 'That entry has already been deleted')
     }
     return { ok: true, card: { cardNumber: rows[0].card_number, label: rows[0].label, balance: rows[0].balance } }
   } catch (err) {
     // The balance can never go below zero (a database rule), for example undoing a stamp that was already spent on a reward.
     if (err && (err.code === '23514' || /check constraint|violates/i.test(String(err.message)))) {
-      return fail(409, 'That stamp has already been spent on a reward. Undo the reward first.')
+      return fail(409, 'That stamp has already been spent on a reward. Delete the free-drink entry first.')
     }
     throw err
   }

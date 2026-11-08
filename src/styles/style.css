@@ -2552,6 +2552,8 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
 .admin-loyalty-ledger li { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
 .admin-loyalty-ledger li > span { flex: 1; min-width: 0; }
 .admin-loyalty-ledger time { color: var(--text-dim); font-size: 0.78rem; white-space: nowrap; }
+.admin-loyalty-ledger li.is-removed, .admin-loyalty-ledger li.is-void { opacity: 0.55; }
+.admin-loyalty-ledger li.is-removed > span > b { text-decoration: line-through; }
 .admin-small { padding: 4px 12px; font-size: 0.8rem; }
 .is-disabled td { opacity: 0.55; }
 .is-disabled td.admin-loyalty-rowbtns { opacity: 1; } /* the buttons stay fully visible so a disabled card can still be opened or edited */
