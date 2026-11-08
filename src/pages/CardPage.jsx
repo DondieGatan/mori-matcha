@@ -5,7 +5,7 @@ import BackToTop from '../components/BackToTop'
 import Assistant from '../components/Assistant'
 import { LoyaltyCardBack, LoyaltyCardFront } from '../components/LoyaltyCardArt'
 import { INSTAGRAM_DM_URL } from '../data/menu'
-import { CARD_SLOTS, REWARD_TEXT, STAMPS_PER_REWARD } from '../data/loyalty'
+import { CARD_SLOTS, REWARD_TEXT, STAMPS_PER_REWARD, formatDate } from '../data/loyalty'
 
 const TOKEN_KEY = 'mori-card-token'
 const NUMBER_KEY = 'mori-card-number'
@@ -143,7 +143,8 @@ export default function CardPage() {
   }, [load])
 
   const balance = card ? card.balance : 0
-  const ready = balance >= STAMPS_PER_REWARD
+  const expired = Boolean(card && card.expired)
+  const ready = balance >= STAMPS_PER_REWARD && !expired
   const toGo = Math.max(0, STAMPS_PER_REWARD - balance)
   const carried = ready ? balance - STAMPS_PER_REWARD : 0
 
@@ -184,12 +185,19 @@ export default function CardPage() {
             {state === 'ready' && card && (
               <>
                 <div className="loyalty-cards">
-                  <LoyaltyCardFront label={card.label} cardNumber={card.cardNumber} />
+                  <LoyaltyCardFront label={card.label} cardNumber={card.cardNumber} expiresOn={card.expiresOn} expired={expired} />
                   <LoyaltyCardBack balance={balance} freshFrom={freshFrom} />
                 </div>
 
-                <div className={'loyalty-status' + (ready ? ' is-ready' : '')} role="status">
-                  {ready ? (
+                <div className={'loyalty-status' + (expired ? ' is-expired' : ready ? ' is-ready' : '')} role="status">
+                  {expired ? (
+                    <>
+                      <strong>This card expired on {formatDate(card.expiresOn)}</strong>
+                      <span>
+                        It can&apos;t earn new stamps or a free drink any more. Message us on Instagram and we&apos;ll help you with a new card.
+                      </span>
+                    </>
+                  ) : ready ? (
                     <>
                       <strong>Your free drink is ready!</strong>
                       <span>
@@ -207,6 +215,7 @@ export default function CardPage() {
                       </span>
                     </>
                   )}
+                  {!expired && card.expiresOn && <small className="loyalty-valid-note">Valid until {formatDate(card.expiresOn)}</small>}
                 </div>
 
                 {card.rewardsRedeemed > 0 && (

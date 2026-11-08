@@ -110,7 +110,11 @@ phone to edit. The rules (9 stamps, the 10th drink free) live in `src/data/loyal
 
 Staff can also fix a typo in a customer's name or the card number (the link, stamps and history are untouched, and each change is written
 to an edit history, as are disabling or enabling a card and making a new link, with who did it and when).
-`npm test` runs `tests/loyalty.test.mjs`: 48 tests against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
+Every card has an optional **valid until** date (a year after it is made by default; staff can change or clear it, and cards
+made before this existed have none). The customer sees the date on their card; after it the card still opens but cannot earn
+stamps or a free drink until staff extend it, and the server enforces that, not just the screen. **Delete** hides a card and turns
+its link and number off but erases nothing (stamps, history and the "one stamp per order" rule are kept), and it can be restored.
+`npm test` runs `tests/loyalty.test.mjs`: 62 tests against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
 double stamping, racing requests, replayed redemptions, guessed or replaced links, injection, editing history).
 
 ## Structure

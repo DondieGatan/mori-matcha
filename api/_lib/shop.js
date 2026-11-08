@@ -134,6 +134,7 @@ const LOYALTY =
   `The café has a digital loyalty card. Every drink in a paid order earns one stamp, and after ${STAMPS_PER_REWARD} stamps the ${CARD_SLOTS}th drink is free: ${REWARD_TEXT}. ` +
   `The card lives on the customer's phone at a private link that the café sends on Instagram, and it can be opened from the Loyalty Card page on the website. ` +
   `Stamps are added only by the café team once an order is paid, so customers should quote their card number when they order. ` +
+  `Each card shows the date it is valid until, and after that date it cannot earn stamps or a free drink, so customers should use it before then. ` +
   `Customers cannot add or change stamps themselves, and the link should not be shared. To get a card, message the café on Instagram.`
 
 const BUILT_BY = 'The website and this assistant were built by Dondie Godwin Gatan.'

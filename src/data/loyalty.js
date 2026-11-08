@@ -24,3 +24,38 @@ export function stampsForOrder(items, total) {
   const paidFor = Number.isFinite(total) ? Math.floor(total / CHEAPEST_DRINK_PRICE) : 0
   return Math.max(0, Math.min(drinks, paidFor, MAX_STAMPS_PER_ORDER))
 }
+
+// A card is valid for this many days from the day it is made. Staff can change or remove the date on any card, and cards made
+// before this rule existed have no expiry. After its date a card still opens and shows its stamps, but cannot earn stamps or a
+// free drink until staff extend it.
+export const CARD_VALID_DAYS = 365
+
+// Dates are plain calendar dates (YYYY-MM-DD) in the café's time zone, so "valid until 8 Nov" means the whole of 8 Nov in Manila.
+export const CAFE_TIME_ZONE = 'Asia/Manila'
+
+export function todayInManila(now = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: CAFE_TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+}
+
+export function addDays(iso, days) {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+}
+
+// Returns the date as YYYY-MM-DD if it is a real calendar date between 2020 and 2100, otherwise null.
+export function normalizeDate(input) {
+  const s = String(input ?? '').trim()
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null
+  const [y, m, d] = s.split('-').map(Number)
+  if (y < 2020 || y > 2100) return null
+  const t = new Date(Date.UTC(y, m - 1, d))
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d ? s : null
+}
+
+// 2027-11-08 -> "Nov 8, 2027"
+export function formatDate(iso) {
+  const n = normalizeDate(iso)
+  if (!n) return ''
+  const [y, m, d] = n.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-PH', { timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric' })
+}

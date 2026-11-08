@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CARD_NUMBER_PATTERN, STAMPS_PER_REWARD } from '../data/loyalty'
+import { CARD_NUMBER_PATTERN, CARD_VALID_DAYS, STAMPS_PER_REWARD, addDays, formatDate, normalizeDate, todayInManila } from '../data/loyalty'
 import { LoyaltyCardBack } from './LoyaltyCardArt'
 
 // Staff-only loyalty panel for the admin page. Every button here calls /api/loyalty with the admin key; the server does the
-// checking (paid order, one stamp per order, enough stamps for a reward), so nothing here can be tampered with from a browser.
+// checking (paid order, one stamp per order, enough stamps for a reward, card not expired or deleted), so nothing here can be
+// tampered with from a browser.
 
 const STAFF_KEY = 'mori-admin-staff-name'
 
@@ -23,20 +24,28 @@ function itemsText(items) {
   return items.map((i) => `${i.qty || 1}× ${i.name}`).join(', ')
 }
 
+const dateOrWords = (v) => formatDate(v) || v
+
 // How each kind of recorded change reads in a card's history.
 function editText(h) {
   if (h.field === 'name') return ['Name changed', `${h.old_value} → ${h.new_value}`]
   if (h.field === 'number') return ['Card number changed', `${h.old_value} → ${h.new_value}`]
-  if (h.field === 'status') return [h.new_value === 'disabled' ? 'Card disabled' : 'Card enabled', '']
+  if (h.field === 'status') {
+    return [{ disabled: 'Card disabled', enabled: 'Card enabled', deleted: 'Card deleted', restored: 'Card restored' }[h.new_value] || 'Status changed', '']
+  }
   if (h.field === 'link') return ['New link made', 'the old link stopped working']
+  if (h.field === 'expiry') return ['Valid until changed', `${dateOrWords(h.old_value)} → ${dateOrWords(h.new_value)}`]
   return ['Changed', '']
 }
 
 const LINK_PROBLEM = {
   'not-saved':
-    "This card was made before links could be saved, so its link can't be shown. Press New link once to make one that always shows here. The old link stops working.",
-  unreadable: "The saved link can't be read (the admin key may have been changed). Press New link to make a fresh one.",
+    "This card was made before links could be saved, so its link can't be shown. Press Make a link once to make one that always shows here. The old link stops working.",
+  unreadable: "The saved link can't be read (the admin key may have been changed). Press Make a link to make a fresh one.",
+  deleted: 'This card is deleted, so it has no working link. Restore the card to use its link again.',
 }
+
+const defaultExpiry = () => addDays(todayInManila(), CARD_VALID_DAYS)
 
 export default function AdminLoyalty({ adminKey }) {
   const [staff, setStaff] = useState(() => {
@@ -50,6 +59,8 @@ export default function AdminLoyalty({ adminKey }) {
   const [cards, setCards] = useState(null)
   const [eligible, setEligible] = useState([])
   const [newLabel, setNewLabel] = useState('')
+  const [newExpiry, setNewExpiry] = useState(defaultExpiry) // the "valid until" for a new card; empty means no expiry
+  const [showDeleted, setShowDeleted] = useState(false)
   const [created, setCreated] = useState(null) // { cardNumber, label, link }
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -59,25 +70,25 @@ export default function AdminLoyalty({ adminKey }) {
   const [ledger, setLedger] = useState([])
   const [edits, setEdits] = useState([])
   const [link, setLink] = useState(null) // { cardNumber, token, reason } for the open card
-  const [editing, setEditing] = useState(null) // { card, label, number } while the edit form is open
+  const [editing, setEditing] = useState(null) // { card, label, number, expiry } while the edit form is open
   const [fresh, setFresh] = useState(null) // { card, from }: the stamp card shows stamps after `from` coming down
 
   const refresh = useCallback(
     async (query = q) => {
       try {
-        const [c, e] = await Promise.all([api(adminKey, { action: 'search', q: query }), api(adminKey, { action: 'eligible' })])
+        const [c, e] = await Promise.all([api(adminKey, { action: 'search', q: query, includeDeleted: showDeleted }), api(adminKey, { action: 'eligible' })])
         setCards(c.cards)
         setEligible(e.orders)
       } catch (err) {
         setError(err.message)
       }
     },
-    [adminKey, q],
+    [adminKey, q, showDeleted],
   )
 
   useEffect(() => {
-    refresh('')
-  }, [adminKey]) // eslint-disable-line react-hooks/exhaustive-deps
+    refresh(q)
+  }, [adminKey, showDeleted]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function rememberStaff(v) {
     setStaff(v)
@@ -116,7 +127,7 @@ export default function AdminLoyalty({ adminKey }) {
 
   // The Edit button in a card's row: opens the card if it is closed, and opens or closes the edit form.
   async function startEdit(c) {
-    const form = { card: c.cardNumber, label: c.label, number: c.cardNumber }
+    const form = { card: c.cardNumber, label: c.label, number: c.cardNumber, expiry: c.expiresOn || '' }
     if (open === c.cardNumber) {
       setEditing(editing && editing.card === c.cardNumber ? null : form)
       return
@@ -176,11 +187,33 @@ export default function AdminLoyalty({ adminKey }) {
     )
   }
 
+  function deleteCard(c) {
+    if (
+      !window.confirm(
+        `Delete ${c.cardNumber} (${c.label})?\n\nIt disappears from this list and its link and number stop working. Its stamps and history are kept, and you can bring it back with "Show deleted cards" and Restore.`,
+      )
+    )
+      return
+    run(
+      () => `${c.cardNumber} deleted. Tick "Show deleted cards" to find it and restore it.`,
+      { action: 'delete', cardNumber: c.cardNumber },
+      () => {
+        if (open === c.cardNumber) setOpen(null)
+        if (editing && editing.card === c.cardNumber) setEditing(null)
+      },
+    )
+  }
+
+  function restoreCard(c) {
+    run(() => `${c.cardNumber} restored.`, { action: 'restore', cardNumber: c.cardNumber }, () => (open === c.cardNumber ? loadDetail(c.cardNumber) : null))
+  }
+
   function saveEdit(c) {
     const next = editing.number.trim().toUpperCase()
     const body = { action: 'edit', cardNumber: c.cardNumber }
     if (editing.label.trim() !== c.label) body.label = editing.label
     if (next !== c.cardNumber) body.newCardNumber = next
+    if (editing.expiry.trim() !== (c.expiresOn || '')) body.expiresOn = editing.expiry.trim()
     run(
       (d) => (!d.changed ? 'Nothing was changed.' : d.card.cardNumber !== c.cardNumber ? `Saved. The card number is now ${d.card.cardNumber}, so tell the customer.` : 'Saved.'),
       body,
@@ -201,8 +234,9 @@ export default function AdminLoyalty({ adminKey }) {
   return (
     <div className="admin-loyalty">
       <p className="admin-loyalty-intro">
-        One stamp per drink, only for orders marked <b>paid</b>. Each order can be stamped once. {STAMPS_PER_REWARD} stamps earn a free drink.
-        Everything you do here is recorded.
+        One stamp per drink, only for orders marked <b>paid</b>. Each order can be stamped once. {STAMPS_PER_REWARD} stamps earn a free drink. A card
+        can be given a &ldquo;valid until&rdquo; date, and after it the card cannot earn stamps or a free drink until you extend it. Everything you do here is
+        recorded.
       </p>
 
       <div className="admin-loyalty-row">
@@ -221,10 +255,11 @@ export default function AdminLoyalty({ adminKey }) {
           e.preventDefault()
           run(
             (d) => `Card ${d.card.cardNumber} created.`,
-            { action: 'create', label: newLabel },
+            { action: 'create', label: newLabel, expiresOn: newExpiry },
             (d) => {
               setCreated({ cardNumber: d.card.cardNumber, label: d.card.label, link: linkFor(d.token) })
               setNewLabel('')
+              setNewExpiry(defaultExpiry())
             },
           )
         }}
@@ -233,7 +268,11 @@ export default function AdminLoyalty({ adminKey }) {
           New card for (name or Instagram handle)
           <input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} maxLength={60} placeholder="@juandelacruz" />
         </label>
-        <button type="submit" className="btn btn-primary" disabled={busy || !newLabel.trim()}>
+        <label className="admin-loyalty-date">
+          Valid until (empty = no expiry)
+          <input type="date" value={newExpiry} min={todayInManila()} onChange={(e) => setNewExpiry(e.target.value)} aria-label="New card valid until" />
+        </label>
+        <button type="submit" className="btn btn-primary" disabled={busy || !newLabel.trim() || (newExpiry !== '' && !normalizeDate(newExpiry))}>
           Create card
         </button>
       </form>
@@ -271,6 +310,10 @@ export default function AdminLoyalty({ adminKey }) {
           Search
         </button>
       </form>
+      <div className="admin-loyalty-check">
+        <input id="loyalty-show-deleted" type="checkbox" checked={showDeleted} onChange={(e) => setShowDeleted(e.target.checked)} />
+        <label htmlFor="loyalty-show-deleted">Show deleted cards</label>
+      </div>
 
       {cards && cards.length === 0 && <p>No cards found.</p>}
       {cards && cards.length > 0 && (
@@ -282,256 +325,330 @@ export default function AdminLoyalty({ adminKey }) {
                 <th>Name</th>
                 <th>Stamps</th>
                 <th>Free drinks</th>
+                <th>Valid until</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {cards.map((c) => (
-                <FragmentRow key={c.cardNumber}>
-                  <tr className={'admin-loyalty-cardrow' + (c.disabled ? ' is-disabled' : '')}>
-                    <td data-label="Card">
-                      <b>{c.cardNumber}</b>
-                    </td>
-                    <td data-label="Name">
-                      {c.label}
-                      {c.disabled && <em> (disabled)</em>}
-                    </td>
-                    <td data-label="Stamps">
-                      {c.balance} / {STAMPS_PER_REWARD}
-                    </td>
-                    <td data-label="Free drinks">
-                      {c.rewardsReady > 0 ? <b className="admin-loyalty-ready">{c.rewardsReady} ready</b> : '—'} <small>({c.rewardsRedeemed} used)</small>
-                    </td>
-                    <td className="admin-loyalty-rowbtns">
-                      <button type="button" className="btn btn-ghost admin-small" onClick={() => openCard(c.cardNumber)}>
-                        {open === c.cardNumber ? 'Close' : 'Open'}
-                      </button>
-                      <button type="button" className="btn btn-ghost admin-small" disabled={busy} onClick={() => startEdit(c)} aria-label={`Edit ${c.cardNumber}`}>
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                  {open === c.cardNumber && (
-                    <tr className="admin-loyalty-detailrow">
-                      <td colSpan={5} className="admin-loyalty-detail">
-                        <div className="admin-loyalty-detail-grid">
-                          <div className="admin-loyalty-detail-card">
-                            <LoyaltyCardBack balance={c.balance} freshFrom={fresh && fresh.card === c.cardNumber ? fresh.from : null} />
-                            <div className="admin-loyalty-link">
-                              <p className="admin-loyalty-link-title">Customer&apos;s private link</p>
-                              {!link || link.cardNumber !== c.cardNumber ? (
-                                <p className="admin-loyalty-hint">Loading…</p>
-                              ) : link.token ? (
-                                <>
-                                  <div className="admin-loyalty-link-row">
-                                    <input
-                                      readOnly
-                                      value={linkFor(link.token)}
-                                      onFocus={(e) => e.target.select()}
-                                      aria-label="This card's private link"
-                                    />
-                                    <button type="button" className="btn btn-primary admin-small" onClick={() => copy(linkFor(link.token))}>
-                                      Copy link
-                                    </button>
-                                  </div>
-                                  <p className="admin-loyalty-hint">
-                                    Send this to the customer on Instagram. Anyone who has it can see this card, so only send it to them.
-                                    {c.disabled ? ' This card is disabled, so the link will not work until you enable it.' : ''}
-                                  </p>
-                                </>
-                              ) : (
-                                <>
-                                  <p className="admin-loyalty-hint">{LINK_PROBLEM[link.reason] || LINK_PROBLEM.unreadable}</p>
-                                  <div className="admin-loyalty-btns">
-                                    <button type="button" className="btn btn-primary admin-small" disabled={busy} onClick={() => makeNewLink(c)}>
-                                      Make a link
-                                    </button>
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          <div className="admin-loyalty-detail-main">
-                            {c.disabled && (
-                              <div className="admin-loyalty-disabled" role="status">
-                                <span>
-                                  <b>This card is disabled.</b> The customer&apos;s link and the card number do not work until you enable it. Stamps and history are
-                                  kept.
-                                </span>
-                                <button
-                                  type="button"
-                                  className="btn btn-primary admin-small"
-                                  disabled={busy}
-                                  onClick={() => run(() => 'Card enabled.', { action: 'enable', cardNumber: c.cardNumber }, () => loadDetail(c.cardNumber, { withLink: false }))}
-                                >
-                                  Enable card
-                                </button>
-                              </div>
-                            )}
-                            {editing && editing.card === c.cardNumber && (
-                              <form
-                                className="admin-loyalty-edit"
-                                onSubmit={(e) => {
-                                  e.preventDefault()
-                                  saveEdit(c)
-                                }}
-                              >
-                                <label>
-                                  Name or Instagram handle
-                                  <input
-                                    value={editing.label}
-                                    maxLength={60}
-                                    onChange={(e) => setEditing({ ...editing, label: e.target.value })}
-                                    aria-label="Customer name"
-                                  />
-                                </label>
-                                <label>
-                                  Card number
-                                  <input
-                                    value={editing.number}
-                                    maxLength={7}
-                                    autoCapitalize="characters"
-                                    spellCheck="false"
-                                    onChange={(e) => setEditing({ ...editing, number: e.target.value.toUpperCase() })}
-                                    aria-label="Card number"
-                                  />
-                                </label>
-                                {!CARD_NUMBER_PATTERN.test(editing.number.trim()) && (
-                                  <p className="admin-error">A card number looks like LC-7K3Q: LC- and 4 letters or numbers (no O, I, L, 0 or 1).</p>
-                                )}
-                                {editing.number.trim() !== c.cardNumber && CARD_NUMBER_PATTERN.test(editing.number.trim()) && (
-                                  <p className="admin-loyalty-hint">
-                                    The old number {c.cardNumber} stops working at once. The customer&apos;s link, stamps and history stay the same, but tell
-                                    them their new number.
-                                  </p>
-                                )}
-                                <div className="admin-loyalty-btns">
-                                  <button
-                                    type="submit"
-                                    className="btn btn-primary admin-small"
-                                    disabled={
-                                      busy ||
-                                      !editing.label.trim() ||
-                                      !CARD_NUMBER_PATTERN.test(editing.number.trim()) ||
-                                      (editing.label.trim() === c.label && editing.number.trim() === c.cardNumber)
-                                    }
-                                  >
-                                    Save changes
-                                  </button>
-                                  <button type="button" className="btn btn-ghost admin-small" onClick={() => setEditing(null)}>
-                                    Cancel
-                                  </button>
-                                </div>
-                              </form>
-                            )}
-
-                            <div className="admin-loyalty-stamp">
-                              <label>
-                                Add a stamp from a paid order
-                                <select value={pick} onChange={(e) => setPick(e.target.value)}>
-                                  <option value="">Choose a paid order…</option>
-                                  {eligible.map((o) => (
-                                    <option key={o.orderNumber} value={o.orderNumber}>
-                                      {o.orderNumber} · ₱{o.total} · {itemsText(o.items)} → {o.stamps} stamp{o.stamps === 1 ? '' : 's'}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-                              <button
-                                type="button"
-                                className="btn btn-primary"
-                                disabled={busy || !pick || c.disabled}
-                                onClick={() => {
-                                  setFresh({ card: c.cardNumber, from: c.balance })
-                                  run(
-                                    (d) => `${d.stamped} stamp${d.stamped === 1 ? '' : 's'} added to ${c.cardNumber}.`,
-                                    { action: 'stamp', cardNumber: c.cardNumber, orderNumber: pick },
-                                    async () => {
-                                      setPick('')
-                                      await loadDetail(c.cardNumber, { withLink: false })
-                                    },
-                                  )
-                                }}
-                              >
-                                Add stamp
-                              </button>
-                            </div>
-                            {eligible.length === 0 && <p className="admin-loyalty-hint">No paid orders are waiting for a stamp. Mark an order as paid on the Orders tab first.</p>}
-
-                            <div className="admin-loyalty-btns">
-                              <button
-                                type="button"
-                                className="btn btn-primary"
-                                disabled={busy || c.rewardsReady < 1 || c.disabled}
-                                onClick={() => {
-                                  if (!window.confirm(`Give ${c.label} a free drink? This uses ${STAMPS_PER_REWARD} stamps.`)) return
-                                  run(() => `Free drink given to ${c.cardNumber}.`, { action: 'redeem', cardNumber: c.cardNumber }, () => loadDetail(c.cardNumber, { withLink: false }))
-                                }}
-                              >
-                                Give free drink
-                              </button>
-                              <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => makeNewLink(c)}>
-                                New link
-                              </button>
-                              <button
-                                type="button"
-                                className="btn btn-ghost"
-                                disabled={busy}
-                                onClick={() => {
-                                  if (!c.disabled && !window.confirm(`Disable ${c.cardNumber} (${c.label})? Its link and number stop working until you enable it again.`)) return
-                                  run(() => (c.disabled ? 'Card enabled.' : 'Card disabled.'), { action: c.disabled ? 'enable' : 'disable', cardNumber: c.cardNumber }, () => loadDetail(c.cardNumber, { withLink: false }))
-                                }}
-                              >
-                                {c.disabled ? 'Enable card' : 'Disable card'}
-                              </button>
-                            </div>
-
-                            <h4>History</h4>
-                            <ul className="admin-loyalty-ledger">
-                              {history.map((h) =>
-                                h.type === 'edit' ? (
-                                  <li key={h.key}>
-                                    <span>
-                                      <b>{editText(h)[0]}</b>
-                                      {editText(h)[1] ? ` · ${editText(h)[1]}` : ''}
-                                      {h.staff ? ` · by ${h.staff}` : ' · no name recorded'}
-                                    </span>
-                                    <time>{new Date(h.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</time>
-                                  </li>
-                                ) : (
-                                  <li key={h.key}>
-                                    <span>
-                                      <b>{h.kind === 'stamp' ? `+${h.stamps} stamp${h.stamps === 1 ? '' : 's'}` : h.kind === 'redeem' ? 'Free drink' : 'Undone'}</b>
-                                      {h.order_number ? ` · order ${h.order_number}` : ''}
-                                      {h.staff ? ` · by ${h.staff}` : ''}
-                                      {h.note ? ` · ${h.note}` : ''}
-                                    </span>
-                                    <time>{new Date(h.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</time>
-                                    {(h.kind === 'stamp' || h.kind === 'redeem') && (
-                                      <button
-                                        type="button"
-                                        className="admin-delete-btn"
-                                        disabled={busy}
-                                        onClick={() => {
-                                          if (!window.confirm('Undo this entry? It stays in the history as undone.')) return
-                                          run(() => 'Entry undone.', { action: 'void', entryId: h.id }, () => loadDetail(c.cardNumber, { withLink: false }))
-                                        }}
-                                      >
-                                        Undo
-                                      </button>
-                                    )}
-                                  </li>
-                                ),
-                              )}
-                              {history.length === 0 && <li>No activity yet.</li>}
-                            </ul>
-                          </div>
-                        </div>
+              {cards.map((c) => {
+                const off = c.disabled || c.deleted
+                return (
+                  <FragmentRow key={c.cardNumber}>
+                    <tr className={'admin-loyalty-cardrow' + (off ? ' is-disabled' : '')}>
+                      <td data-label="Card">
+                        <b>{c.cardNumber}</b>
+                      </td>
+                      <td data-label="Name">
+                        {c.label}
+                        {c.deleted ? <em> (deleted)</em> : c.disabled ? <em> (disabled)</em> : null}
+                      </td>
+                      <td data-label="Stamps">
+                        {c.balance} / {STAMPS_PER_REWARD}
+                      </td>
+                      <td data-label="Free drinks">
+                        {c.rewardsReady > 0 ? <b className="admin-loyalty-ready">{c.rewardsReady} ready</b> : '—'} <small>({c.rewardsRedeemed} used)</small>
+                      </td>
+                      <td data-label="Valid until" className={c.expired ? 'admin-loyalty-expired' : ''}>
+                        {c.expiresOn ? formatDate(c.expiresOn) : 'No expiry'}
+                        {c.expired && <em> (expired)</em>}
+                      </td>
+                      <td className="admin-loyalty-rowbtns">
+                        <button type="button" className="btn btn-ghost admin-small" onClick={() => openCard(c.cardNumber)}>
+                          {open === c.cardNumber ? 'Close' : 'Open'}
+                        </button>
+                        {c.deleted ? (
+                          <button type="button" className="btn btn-ghost admin-small" disabled={busy} onClick={() => restoreCard(c)} aria-label={`Restore ${c.cardNumber}`}>
+                            Restore
+                          </button>
+                        ) : (
+                          <>
+                            <button type="button" className="btn btn-ghost admin-small admin-danger" disabled={busy} onClick={() => deleteCard(c)} aria-label={`Delete ${c.cardNumber}`}>
+                              Delete
+                            </button>
+                            <button type="button" className="btn btn-ghost admin-small" disabled={busy} onClick={() => startEdit(c)} aria-label={`Edit ${c.cardNumber}`}>
+                              Edit
+                            </button>
+                          </>
+                        )}
                       </td>
                     </tr>
-                  )}
-                </FragmentRow>
-              ))}
+                    {open === c.cardNumber && (
+                      <tr className="admin-loyalty-detailrow">
+                        <td colSpan={6} className="admin-loyalty-detail">
+                          <div className="admin-loyalty-detail-grid">
+                            <div className="admin-loyalty-detail-card">
+                              <LoyaltyCardBack balance={c.balance} freshFrom={fresh && fresh.card === c.cardNumber ? fresh.from : null} />
+                              <div className="admin-loyalty-link">
+                                <p className="admin-loyalty-link-title">Customer&apos;s private link</p>
+                                {!link || link.cardNumber !== c.cardNumber ? (
+                                  <p className="admin-loyalty-hint">Loading…</p>
+                                ) : link.token ? (
+                                  <>
+                                    <div className="admin-loyalty-link-row">
+                                      <input readOnly value={linkFor(link.token)} onFocus={(e) => e.target.select()} aria-label="This card's private link" />
+                                      <button type="button" className="btn btn-primary admin-small" onClick={() => copy(linkFor(link.token))}>
+                                        Copy link
+                                      </button>
+                                    </div>
+                                    <p className="admin-loyalty-hint">
+                                      Send this to the customer on Instagram. Anyone who has it can see this card, so only send it to them.
+                                      {c.disabled ? ' This card is disabled, so the link will not work until you enable it.' : ''}
+                                    </p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p className="admin-loyalty-hint">{LINK_PROBLEM[link.reason] || LINK_PROBLEM.unreadable}</p>
+                                    {link.reason !== 'deleted' && (
+                                      <div className="admin-loyalty-btns">
+                                        <button type="button" className="btn btn-primary admin-small" disabled={busy} onClick={() => makeNewLink(c)}>
+                                          Make a link
+                                        </button>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <div className="admin-loyalty-detail-main">
+                              {c.deleted && (
+                                <div className="admin-loyalty-disabled" role="status">
+                                  <span>
+                                    <b>This card is deleted.</b> It is hidden from the normal list and its link and number do not work. Its stamps and history are kept.
+                                  </span>
+                                  <button type="button" className="btn btn-primary admin-small" disabled={busy} onClick={() => restoreCard(c)}>
+                                    Restore card
+                                  </button>
+                                </div>
+                              )}
+                              {!c.deleted && c.disabled && (
+                                <div className="admin-loyalty-disabled" role="status">
+                                  <span>
+                                    <b>This card is disabled.</b> The customer&apos;s link and the card number do not work until you enable it. Stamps and history are
+                                    kept.
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className="btn btn-primary admin-small"
+                                    disabled={busy}
+                                    onClick={() => run(() => 'Card enabled.', { action: 'enable', cardNumber: c.cardNumber }, () => loadDetail(c.cardNumber, { withLink: false }))}
+                                  >
+                                    Enable card
+                                  </button>
+                                </div>
+                              )}
+                              {!c.deleted && c.expired && (
+                                <div className="admin-loyalty-expirednote" role="status">
+                                  <span>
+                                    <b>This card expired on {formatDate(c.expiresOn)}.</b> The customer can still open it, but it cannot earn stamps or a free drink until you
+                                    extend it.
+                                  </span>
+                                  <button type="button" className="btn btn-primary admin-small" disabled={busy} onClick={() => startEdit(c)}>
+                                    Extend…
+                                  </button>
+                                </div>
+                              )}
+                              {editing && editing.card === c.cardNumber && !c.deleted && (
+                                <form
+                                  className="admin-loyalty-edit"
+                                  onSubmit={(e) => {
+                                    e.preventDefault()
+                                    saveEdit(c)
+                                  }}
+                                >
+                                  <label>
+                                    Name or Instagram handle
+                                    <input
+                                      value={editing.label}
+                                      maxLength={60}
+                                      onChange={(e) => setEditing({ ...editing, label: e.target.value })}
+                                      aria-label="Customer name"
+                                    />
+                                  </label>
+                                  <label>
+                                    Card number
+                                    <input
+                                      value={editing.number}
+                                      maxLength={7}
+                                      autoCapitalize="characters"
+                                      spellCheck="false"
+                                      onChange={(e) => setEditing({ ...editing, number: e.target.value.toUpperCase() })}
+                                      aria-label="Card number"
+                                    />
+                                  </label>
+                                  {!CARD_NUMBER_PATTERN.test(editing.number.trim()) && (
+                                    <p className="admin-error">A card number looks like LC-7K3Q: LC- and 4 letters or numbers (no O, I, L, 0 or 1).</p>
+                                  )}
+                                  {editing.number.trim() !== c.cardNumber && CARD_NUMBER_PATTERN.test(editing.number.trim()) && (
+                                    <p className="admin-loyalty-hint">
+                                      The old number {c.cardNumber} stops working at once. The customer&apos;s link, stamps and history stay the same, but tell
+                                      them their new number.
+                                    </p>
+                                  )}
+                                  <label>
+                                    Valid until (empty = no expiry)
+                                    <span className="admin-loyalty-datefield">
+                                      <input
+                                        type="date"
+                                        value={editing.expiry}
+                                        onChange={(e) => setEditing({ ...editing, expiry: e.target.value })}
+                                        aria-label="Valid until"
+                                      />
+                                      <button
+                                        type="button"
+                                        className="btn btn-ghost admin-small"
+                                        onClick={() => {
+                                          const from = editing.expiry && editing.expiry > todayInManila() ? editing.expiry : todayInManila()
+                                          setEditing({ ...editing, expiry: addDays(from, CARD_VALID_DAYS) })
+                                        }}
+                                      >
+                                        +1 year
+                                      </button>
+                                      <button type="button" className="btn btn-ghost admin-small" onClick={() => setEditing({ ...editing, expiry: '' })}>
+                                        No expiry
+                                      </button>
+                                    </span>
+                                  </label>
+                                  {editing.expiry && !normalizeDate(editing.expiry) && <p className="admin-error">That is not a valid date.</p>}
+                                  {editing.expiry && normalizeDate(editing.expiry) && editing.expiry < todayInManila() && (
+                                    <p className="admin-loyalty-hint">That date has already passed, so the card will count as expired.</p>
+                                  )}
+                                  <div className="admin-loyalty-btns">
+                                    <button
+                                      type="submit"
+                                      className="btn btn-primary admin-small"
+                                      disabled={
+                                        busy ||
+                                        !editing.label.trim() ||
+                                        !CARD_NUMBER_PATTERN.test(editing.number.trim()) ||
+                                        (editing.expiry.trim() !== '' && !normalizeDate(editing.expiry)) ||
+                                        (editing.label.trim() === c.label && editing.number.trim() === c.cardNumber && editing.expiry.trim() === (c.expiresOn || ''))
+                                      }
+                                    >
+                                      Save changes
+                                    </button>
+                                    <button type="button" className="btn btn-ghost admin-small" onClick={() => setEditing(null)}>
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </form>
+                              )}
+
+                              <div className="admin-loyalty-stamp">
+                                <label>
+                                  Add a stamp from a paid order
+                                  <select value={pick} onChange={(e) => setPick(e.target.value)}>
+                                    <option value="">Choose a paid order…</option>
+                                    {eligible.map((o) => (
+                                      <option key={o.orderNumber} value={o.orderNumber}>
+                                        {o.orderNumber} · ₱{o.total} · {itemsText(o.items)} → {o.stamps} stamp{o.stamps === 1 ? '' : 's'}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                                <button
+                                  type="button"
+                                  className="btn btn-primary"
+                                  disabled={busy || !pick || off || c.expired}
+                                  onClick={() => {
+                                    setFresh({ card: c.cardNumber, from: c.balance })
+                                    run(
+                                      (d) => `${d.stamped} stamp${d.stamped === 1 ? '' : 's'} added to ${c.cardNumber}.`,
+                                      { action: 'stamp', cardNumber: c.cardNumber, orderNumber: pick },
+                                      async () => {
+                                        setPick('')
+                                        await loadDetail(c.cardNumber, { withLink: false })
+                                      },
+                                    )
+                                  }}
+                                >
+                                  Add stamp
+                                </button>
+                              </div>
+                              {eligible.length === 0 && <p className="admin-loyalty-hint">No paid orders are waiting for a stamp. Mark an order as paid on the Orders tab first.</p>}
+
+                              <div className="admin-loyalty-btns">
+                                <button
+                                  type="button"
+                                  className="btn btn-primary"
+                                  disabled={busy || c.rewardsReady < 1 || off || c.expired}
+                                  onClick={() => {
+                                    if (!window.confirm(`Give ${c.label} a free drink? This uses ${STAMPS_PER_REWARD} stamps.`)) return
+                                    run(() => `Free drink given to ${c.cardNumber}.`, { action: 'redeem', cardNumber: c.cardNumber }, () => loadDetail(c.cardNumber, { withLink: false }))
+                                  }}
+                                >
+                                  Give free drink
+                                </button>
+                                {!c.deleted && (
+                                  <>
+                                    <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => makeNewLink(c)}>
+                                      New link
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn btn-ghost"
+                                      disabled={busy}
+                                      onClick={() => {
+                                        if (!c.disabled && !window.confirm(`Disable ${c.cardNumber} (${c.label})? Its link and number stop working until you enable it again.`)) return
+                                        run(
+                                          () => (c.disabled ? 'Card enabled.' : 'Card disabled.'),
+                                          { action: c.disabled ? 'enable' : 'disable', cardNumber: c.cardNumber },
+                                          () => loadDetail(c.cardNumber, { withLink: false }),
+                                        )
+                                      }}
+                                    >
+                                      {c.disabled ? 'Enable card' : 'Disable card'}
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+
+                              <h4>History</h4>
+                              <ul className="admin-loyalty-ledger">
+                                {history.map((h) =>
+                                  h.type === 'edit' ? (
+                                    <li key={h.key}>
+                                      <span>
+                                        <b>{editText(h)[0]}</b>
+                                        {editText(h)[1] ? ` · ${editText(h)[1]}` : ''}
+                                        {h.staff ? ` · by ${h.staff}` : ' · no name recorded'}
+                                      </span>
+                                      <time>{new Date(h.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</time>
+                                    </li>
+                                  ) : (
+                                    <li key={h.key}>
+                                      <span>
+                                        <b>{h.kind === 'stamp' ? `+${h.stamps} stamp${h.stamps === 1 ? '' : 's'}` : h.kind === 'redeem' ? 'Free drink' : 'Undone'}</b>
+                                        {h.order_number ? ` · order ${h.order_number}` : ''}
+                                        {h.staff ? ` · by ${h.staff}` : ''}
+                                        {h.note ? ` · ${h.note}` : ''}
+                                      </span>
+                                      <time>{new Date(h.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</time>
+                                      {(h.kind === 'stamp' || h.kind === 'redeem') && (
+                                        <button
+                                          type="button"
+                                          className="admin-delete-btn"
+                                          disabled={busy}
+                                          onClick={() => {
+                                            if (!window.confirm('Undo this entry? It stays in the history as undone.')) return
+                                            run(() => 'Entry undone.', { action: 'void', entryId: h.id }, () => loadDetail(c.cardNumber, { withLink: false }))
+                                          }}
+                                        >
+                                          Undo
+                                        </button>
+                                      )}
+                                    </li>
+                                  ),
+                                )}
+                                {history.length === 0 && <li>No activity yet.</li>}
+                              </ul>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </FragmentRow>
+                )
+              })}
             </tbody>
           </table>
         </div>
