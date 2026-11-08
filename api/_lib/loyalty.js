@@ -11,6 +11,7 @@ import {
   CARD_NUMBER_ALPHABET,
   CARD_NUMBER_PATTERN,
   CARD_VALID_DAYS,
+  EXPIRY_WARNING_DAYS,
   STAMPS_PER_REWARD,
   addDays,
   formatDate,
@@ -139,12 +140,20 @@ export function openToken(blob) {
 // ---------------------------------------------------------------------------------------------------------------------
 
 // The customer's own card, found by its secret token. Anything wrong with the token looks the same: not found.
+// Days left until the last valid day (0 = the last day is today), and whether that is close enough to warn about.
+function soonFields(c) {
+  const daysLeft = c.days_left === null || c.days_left === undefined ? null : Number(c.days_left)
+  const expiresSoon = !c.expired && daysLeft !== null && daysLeft >= 0 && daysLeft <= EXPIRY_WARNING_DAYS
+  return { daysLeft: c.expired ? null : daysLeft, expiresSoon }
+}
+
 export async function viewCard(sql, token) {
   if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(token)) return fail(404, 'Card not found')
   await ensureTables(sql)
   const { rows } = await sql`
     SELECT id, card_number, label, balance, rewards_redeemed, expires_on::text AS expires_on,
-      (expires_on IS NOT NULL AND expires_on < (now() AT TIME ZONE 'Asia/Manila')::date) AS expired
+      (expires_on IS NOT NULL AND expires_on < (now() AT TIME ZONE 'Asia/Manila')::date) AS expired,
+      (expires_on - (now() AT TIME ZONE 'Asia/Manila')::date) AS days_left
     FROM loyalty_cards WHERE token_hash = ${hashToken(token)} AND disabled_at IS NULL AND deleted_at IS NULL
   `
   if (rows.length === 0) return fail(404, 'Card not found')
@@ -162,6 +171,7 @@ export async function viewCard(sql, token) {
       rewardsRedeemed: c.rewards_redeemed,
       expiresOn: c.expires_on,
       expired: Boolean(c.expired),
+      ...soonFields(c),
       history: history.map((h) => ({ kind: h.kind, stamps: h.stamps, at: h.created_at })),
     },
   }
@@ -202,18 +212,34 @@ export async function createCard(sql, { label, expiresOn }) {
   return fail(500, 'Could not create a card number, please try again')
 }
 
-export async function searchCards(sql, { q, includeDeleted }) {
+export async function searchCards(sql, { q, includeDeleted, expiry }) {
   await ensureTables(sql)
   const term = '%' + clean(q, 40).replace(/[\\%_]/g, '\\$&') + '%'
+  // "soon" = last valid day is within the warning window, "expired" = already passed, anything else = every card.
+  const only = expiry === 'soon' || expiry === 'expired' ? expiry : ''
   const { rows } = await sql`
     SELECT card_number, label, balance, rewards_redeemed, created_at, disabled_at, deleted_at, expires_on::text AS expires_on,
-      (expires_on IS NOT NULL AND expires_on < (now() AT TIME ZONE 'Asia/Manila')::date) AS expired
+      (expires_on IS NOT NULL AND expires_on < (now() AT TIME ZONE 'Asia/Manila')::date) AS expired,
+      (expires_on - (now() AT TIME ZONE 'Asia/Manila')::date) AS days_left
     FROM loyalty_cards
     WHERE (card_number ILIKE ${term} OR label ILIKE ${term}) AND (deleted_at IS NULL OR ${Boolean(includeDeleted)}::boolean)
+      AND (${only}::text = ''
+        OR (${only}::text = 'expired' AND expires_on IS NOT NULL AND expires_on < (now() AT TIME ZONE 'Asia/Manila')::date)
+        OR (${only}::text = 'soon' AND expires_on IS NOT NULL AND expires_on >= (now() AT TIME ZONE 'Asia/Manila')::date
+            AND expires_on <= (now() AT TIME ZONE 'Asia/Manila')::date + ${EXPIRY_WARNING_DAYS}::int))
     ORDER BY created_at DESC LIMIT 50
+  `
+  // Totals over every card that has not been deleted, whatever the search or filter, for the heads-up bar at the top.
+  const { rows: totals } = await sql`
+    SELECT
+      count(*) FILTER (WHERE expires_on < (now() AT TIME ZONE 'Asia/Manila')::date)::int AS expired,
+      count(*) FILTER (WHERE expires_on >= (now() AT TIME ZONE 'Asia/Manila')::date
+        AND expires_on <= (now() AT TIME ZONE 'Asia/Manila')::date + ${EXPIRY_WARNING_DAYS}::int)::int AS soon
+    FROM loyalty_cards WHERE deleted_at IS NULL
   `
   return {
     ok: true,
+    expiry: { soon: totals[0].soon, expired: totals[0].expired, warningDays: EXPIRY_WARNING_DAYS },
     cards: rows.map((c) => ({
       cardNumber: c.card_number,
       label: c.label,
@@ -225,6 +251,7 @@ export async function searchCards(sql, { q, includeDeleted }) {
       deleted: Boolean(c.deleted_at),
       expiresOn: c.expires_on,
       expired: Boolean(c.expired),
+      ...soonFields(c),
     })),
   }
 }

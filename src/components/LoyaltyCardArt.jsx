@@ -60,7 +60,7 @@ function Stamp({ index, animate }) {
 }
 
 // The front of the card is Mori's own picture. The member's name and card number sit on a soft strip at the bottom.
-export function LoyaltyCardFront({ label, cardNumber, expiresOn = null, expired = false }) {
+export function LoyaltyCardFront({ label, cardNumber, expiresOn = null, expired = false, expiresSoon = false }) {
   const unit = useCardUnit()
   return (
     <div
@@ -76,8 +76,8 @@ export function LoyaltyCardFront({ label, cardNumber, expiresOn = null, expired 
           <span>{label || 'Your name'}</span>
         </div>
         {expiresOn && (
-          <div className={'loyalty-front-valid' + (expired ? ' is-expired' : '')}>
-            <small>{expired ? 'Expired' : 'Valid until'}</small>
+          <div className={'loyalty-front-valid' + (expired ? ' is-expired' : expiresSoon ? ' is-soon' : '')}>
+            <small>{expired ? 'Expired' : expiresSoon ? 'Expires soon' : 'Valid until'}</small>
             <span>{formatDate(expiresOn)}</span>
           </div>
         )}

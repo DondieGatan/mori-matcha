@@ -29,6 +29,8 @@ export function stampsForOrder(items, total) {
 // before this rule existed have no expiry. After its date a card still opens and shows its stamps, but cannot earn stamps or a
 // free drink until staff extend it.
 export const CARD_VALID_DAYS = 365
+// A card counts as "expiring soon" this many days before its last valid day (and on that day).
+export const EXPIRY_WARNING_DAYS = 14
 
 // Dates are plain calendar dates (YYYY-MM-DD) in the café's time zone, so "valid until 8 Nov" means the whole of 8 Nov in Manila.
 export const CAFE_TIME_ZONE = 'Asia/Manila'
@@ -50,6 +52,13 @@ export function normalizeDate(input) {
   if (y < 2020 || y > 2100) return null
   const t = new Date(Date.UTC(y, m - 1, d))
   return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d ? s : null
+}
+
+// 0 -> "today", 1 -> "tomorrow", 5 -> "in 5 days"
+export function describeDaysLeft(days) {
+  if (days === 0) return 'today'
+  if (days === 1) return 'tomorrow'
+  return `in ${days} days`
 }
 
 // 2027-11-08 -> "Nov 8, 2027"

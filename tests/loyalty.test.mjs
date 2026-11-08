@@ -10,7 +10,7 @@ import { setSqlForTests } from '../api/_lib/db.js'
 import { isAuthorized } from '../api/_lib/auth.js'
 import {
   STAMPS_PER_REWARD, CARD_SLOTS, stampsForOrder, CHEAPEST_DRINK_PRICE, MAX_STAMPS_PER_ORDER,
-  CARD_VALID_DAYS, addDays, todayInManila, normalizeDate, formatDate,
+  CARD_VALID_DAYS, EXPIRY_WARNING_DAYS, addDays, todayInManila, normalizeDate, formatDate, describeDaysLeft,
 } from '../src/data/loyalty.js'
 
 const KEY = 'test-admin-key-123'
@@ -139,7 +139,7 @@ test('the view only ever returns that one card', async () => {
   await fill(a.number, 2)
   const v = await call({ action: 'view', token: a.token }, { key: null })
   assert.equal(v.body.card.balance, 2)
-  assert.deepEqual(Object.keys(v.body.card).sort(), ['balance', 'cardNumber', 'expired', 'expiresOn', 'history', 'label', 'rewardsReady', 'rewardsRedeemed'])
+  assert.deepEqual(Object.keys(v.body.card).sort(), ['balance', 'cardNumber', 'daysLeft', 'expired', 'expiresOn', 'expiresSoon', 'history', 'label', 'rewardsReady', 'rewardsRedeemed'])
   assert.ok(!JSON.stringify(v.body).includes('B'.repeat(1) + '"')) // no second card's label
 })
 
@@ -808,4 +808,79 @@ test('a database made before expiry and deleting existed is upgraded in place an
   assert.equal((await call({ action: 'edit', cardNumber: number, expiresOn: addDays(today(), 60) })).code, 200)
   assert.equal((await call({ action: 'delete', cardNumber: number })).code, 200)
   assert.equal((await call({ action: 'restore', cardNumber: number })).code, 200)
+})
+
+// ---- expiring soon, and finding cards that are expiring or expired --------------------------------------------------------
+test('describeDaysLeft reads naturally', () => {
+  assert.equal(describeDaysLeft(0), 'today')
+  assert.equal(describeDaysLeft(1), 'tomorrow')
+  assert.equal(describeDaysLeft(5), 'in 5 days')
+})
+
+test('a card is "expiring soon" from the warning window until its last valid day, and the customer is told how many days are left', async () => {
+  const { number, token } = await newCard('Soon')
+  const view = async () => (await call({ action: 'view', token }, { key: null })).body.card
+  await setExpiry(number, addDays(today(), EXPIRY_WARNING_DAYS + 1))
+  let c = await view()
+  assert.equal(c.expiresSoon, false, 'one day outside the window')
+  assert.equal(c.daysLeft, EXPIRY_WARNING_DAYS + 1)
+  await setExpiry(number, addDays(today(), EXPIRY_WARNING_DAYS))
+  c = await view()
+  assert.equal(c.expiresSoon, true, 'the last day of the window')
+  assert.equal(c.daysLeft, EXPIRY_WARNING_DAYS)
+  await setExpiry(number, addDays(today(), 1))
+  assert.equal((await view()).daysLeft, 1)
+  await setExpiry(number, today())
+  c = await view()
+  assert.equal(c.expiresSoon, true, 'the last valid day is today')
+  assert.equal(c.daysLeft, 0)
+  assert.equal(c.expired, false, 'still valid on its last day')
+  await setExpiry(number, addDays(today(), -1))
+  c = await view()
+  assert.equal(c.expired, true)
+  assert.equal(c.expiresSoon, false, 'expired is not "soon"')
+  assert.equal(c.daysLeft, null)
+  await setExpiry(number, null)
+  c = await view()
+  assert.equal(c.expiresSoon, false)
+  assert.equal(c.daysLeft, null)
+})
+
+test('staff can list only the cards that are expiring soon or expired, and the totals ignore the filter', async () => {
+  const a = await newCard('Fine')
+  const b = await newCard('Soon one')
+  const c = await newCard('Soon two')
+  const d = await newCard('Gone')
+  const e = await newCard('Never')
+  await setExpiry(a.number, addDays(today(), 200))
+  await setExpiry(b.number, addDays(today(), 3))
+  await setExpiry(c.number, today())
+  await setExpiry(d.number, addDays(today(), -2))
+  await setExpiry(e.number, null)
+  const names = (r) => r.body.cards.map((x) => x.label).sort()
+  const all = await call({ action: 'search', q: '' })
+  assert.equal(all.body.cards.length, 5)
+  assert.deepEqual(all.body.expiry, { soon: 2, expired: 1, warningDays: EXPIRY_WARNING_DAYS })
+  const soon = await call({ action: 'search', q: '', expiry: 'soon' })
+  assert.deepEqual(names(soon), ['Soon one', 'Soon two'])
+  assert.deepEqual(soon.body.cards.map((x) => x.expiresSoon), [true, true])
+  assert.deepEqual(soon.body.expiry, { soon: 2, expired: 1, warningDays: EXPIRY_WARNING_DAYS }, 'totals do not change with the filter')
+  assert.deepEqual(names(await call({ action: 'search', q: '', expiry: 'expired' })), ['Gone'])
+  assert.equal((await call({ action: 'search', q: '', expiry: 'nonsense' })).body.cards.length, 5, 'an unknown filter shows every card')
+  assert.deepEqual(names(await call({ action: 'search', q: 'two', expiry: 'soon' })), ['Soon two'], 'the filter works together with the search')
+  const row = all.body.cards.find((x) => x.label === 'Soon one')
+  assert.equal(row.expiresSoon, true)
+  assert.equal(row.daysLeft, 3)
+  assert.equal(all.body.cards.find((x) => x.label === 'Never').expiresSoon, false)
+})
+
+test('deleted cards are not counted or listed as expiring, and the filter needs the admin key', async () => {
+  const a = await newCard('Del')
+  await setExpiry(a.number, addDays(today(), 2))
+  assert.equal((await call({ action: 'search', q: '', expiry: 'soon' })).body.expiry.soon, 1)
+  await call({ action: 'delete', cardNumber: a.number })
+  const r = await call({ action: 'search', q: '', expiry: 'soon' })
+  assert.equal(r.body.cards.length, 0)
+  assert.equal(r.body.expiry.soon, 0)
+  assert.equal((await call({ action: 'search', q: '', expiry: 'soon' }, { key: null })).code, 401)
 })

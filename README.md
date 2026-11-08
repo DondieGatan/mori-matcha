@@ -114,7 +114,9 @@ Every card has an optional **valid until** date (a year after it is made by defa
 made before this existed have none). The customer sees the date on their card; after it the card still opens but cannot earn
 stamps or a free drink until staff extend it, and the server enforces that, not just the screen. **Delete** hides a card and turns
 its link and number off but erases nothing (stamps, history and the "one stamp per order" rule are kept), and it can be restored.
-`npm test` runs `tests/loyalty.test.mjs`: 62 tests against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
+Cards whose last valid day is within 14 days are marked "expires soon" (on the customer's card and in the staff list), and the staff panel
+has a heads-up bar with the expired / expiring counts plus a filter for each. Nothing is sent to anyone: there are no emails or push messages.
+`npm test` runs `tests/loyalty.test.mjs`: 66 tests against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
 double stamping, racing requests, replayed redemptions, guessed or replaced links, injection, editing history).
 
 ## Structure
