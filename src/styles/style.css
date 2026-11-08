@@ -2408,6 +2408,7 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
 .loyalty-front-valid { text-align: center; flex: 0 0 auto; margin: 0 calc(var(--u) * 2) 0 calc(var(--u) * 3); }
 .loyalty-front-valid span { display: block; white-space: nowrap; font-size: max(9px, calc(var(--u) * 2.8)); font-weight: 500; line-height: 1.35; }
 .loyalty-front-valid.is-expired span, .loyalty-front-valid.is-expired small { color: #a13a33; opacity: 1; }
+.loyalty-front-valid.is-soon span, .loyalty-front-valid.is-soon small { color: #8a5a0b; opacity: 1; }
 .loyalty-front-id { text-align: right; flex: 0 0 auto; margin-left: calc(var(--u) * 4.5); }
 .loyalty-front-id span { display: block; font-size: max(10px, calc(var(--u) * 3.3)); font-weight: 500; letter-spacing: 0.14em; font-variant-numeric: tabular-nums; line-height: 1.3; }
 
@@ -2615,6 +2616,7 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
 /* Expiry on the customer's card page */
 .loyalty-status.is-expired { border-color: #c97b6b; background: #f8e6e1; }
 .loyalty-status.is-expired strong { color: #7a2e22; }
+.loyalty-valid-note.is-soon { padding: 8px 12px; border: 1px solid #e0c283; border-radius: 10px; background: #fbf1d6; color: #6f5314; line-height: 1.5; }
 .loyalty-valid-note { margin-top: 4px; font-size: 0.8rem; color: var(--text-dim); }
 
 /* Expiry, delete and the deleted-cards switch on the staff page */
@@ -2627,6 +2629,19 @@ button.btn-ghost:hover { background: var(--forest); color: var(--cream-soft); }
 .admin-loyalty-expired { color: #a13a33; }
 .admin-loyalty-expirednote { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; padding: 12px 14px; border: 1px solid #e0c283; border-radius: 12px; background: #fbf1d6; color: #6f5314; font-size: 0.9rem; line-height: 1.5; }
 .admin-loyalty-expirednote span { flex: 1 1 220px; }
+.admin-loyalty-soon { color: #8a6217; font-style: normal; font-weight: 600; }
+.admin-loyalty-expirybar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 14px 0 6px; padding: 10px 14px; border: 1px solid #e0c283; border-radius: 12px; background: #fbf1d6; color: #6f5314; font-size: 0.9rem; }
+.admin-loyalty-expirybar > span { color: #7a6a3d; font-size: 0.82rem; }
+.admin-loyalty-chip { padding: 5px 12px; border: 1px solid currentColor; border-radius: 999px; background: #fff; font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.admin-loyalty-chip.is-expired { color: #a13a33; }
+.admin-loyalty-chip.is-soon { color: #8a6217; }
+.admin-loyalty-chip[aria-pressed='true'].is-expired { background: #a13a33; color: #fff; }
+.admin-loyalty-chip[aria-pressed='true'].is-soon { background: #8a6217; color: #fff; }
+.admin-loyalty-filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 22px; margin: 8px 0 4px; }
+.admin-loyalty-filters label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--text-dim); }
+.admin-loyalty-filters select { min-height: 40px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; background: #fff; font: inherit; }
+.admin-loyalty-filters .admin-loyalty-check { margin: 0 0 8px; }
+.admin-loyalty-filters .admin-loyalty-check label { flex-direction: row; align-items: center; }
 .admin-danger { color: #a13a33; border-color: #d6a79c; }
 .admin-danger:hover { background: #f8e6e1; }
 

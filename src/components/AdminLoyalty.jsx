@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CARD_NUMBER_PATTERN, CARD_VALID_DAYS, STAMPS_PER_REWARD, addDays, formatDate, normalizeDate, todayInManila } from '../data/loyalty'
+import {
+  CARD_NUMBER_PATTERN,
+  CARD_VALID_DAYS,
+  EXPIRY_WARNING_DAYS,
+  STAMPS_PER_REWARD,
+  addDays,
+  describeDaysLeft,
+  formatDate,
+  normalizeDate,
+  todayInManila,
+} from '../data/loyalty'
 import { LoyaltyCardBack } from './LoyaltyCardArt'
 
 // Staff-only loyalty panel for the admin page. Every button here calls /api/loyalty with the admin key; the server does the
@@ -62,6 +72,8 @@ export default function AdminLoyalty({ adminKey }) {
   const [newExpiry, setNewExpiry] = useState(defaultExpiry) // the "valid until" for a new card; empty means no expiry
   const [showDeleted, setShowDeleted] = useState(false)
   const [showRemoved, setShowRemoved] = useState(false)
+  const [expiryFilter, setExpiryFilter] = useState('') // '' = every card, 'soon' = expiring soon, 'expired' = already expired
+  const [expiryTotals, setExpiryTotals] = useState({ soon: 0, expired: 0 })
   const [created, setCreated] = useState(null) // { cardNumber, label, link }
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -77,19 +89,20 @@ export default function AdminLoyalty({ adminKey }) {
   const refresh = useCallback(
     async (query = q) => {
       try {
-        const [c, e] = await Promise.all([api(adminKey, { action: 'search', q: query, includeDeleted: showDeleted }), api(adminKey, { action: 'eligible' })])
+        const [c, e] = await Promise.all([api(adminKey, { action: 'search', q: query, includeDeleted: showDeleted, expiry: expiryFilter }), api(adminKey, { action: 'eligible' })])
         setCards(c.cards)
+        if (c.expiry) setExpiryTotals({ soon: c.expiry.soon, expired: c.expiry.expired })
         setEligible(e.orders)
       } catch (err) {
         setError(err.message)
       }
     },
-    [adminKey, q, showDeleted],
+    [adminKey, q, showDeleted, expiryFilter],
   )
 
   useEffect(() => {
     refresh(q)
-  }, [adminKey, showDeleted]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [adminKey, showDeleted, expiryFilter]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function rememberStaff(v) {
     setStaff(v)
@@ -315,12 +328,54 @@ export default function AdminLoyalty({ adminKey }) {
           Search
         </button>
       </form>
-      <div className="admin-loyalty-check">
-        <input id="loyalty-show-deleted" type="checkbox" checked={showDeleted} onChange={(e) => setShowDeleted(e.target.checked)} />
-        <label htmlFor="loyalty-show-deleted">Show deleted cards</label>
+      {(expiryTotals.expired > 0 || expiryTotals.soon > 0) && (
+        <div className="admin-loyalty-expirybar" role="status">
+          <b>Heads up:</b>
+          {expiryTotals.expired > 0 && (
+            <button type="button" className="admin-loyalty-chip is-expired" aria-pressed={expiryFilter === 'expired'} onClick={() => setExpiryFilter(expiryFilter === 'expired' ? '' : 'expired')}>
+              {expiryTotals.expired} expired
+            </button>
+          )}
+          {expiryTotals.soon > 0 && (
+            <button type="button" className="admin-loyalty-chip is-soon" aria-pressed={expiryFilter === 'soon'} onClick={() => setExpiryFilter(expiryFilter === 'soon' ? '' : 'soon')}>
+              {expiryTotals.soon} expiring within {EXPIRY_WARNING_DAYS} days
+            </button>
+          )}
+          <span>Tap one to see only those cards.</span>
+        </div>
+      )}
+      <div className="admin-loyalty-filters">
+        <label>
+          Show
+          <select value={expiryFilter} onChange={(e) => setExpiryFilter(e.target.value)} aria-label="Show cards">
+            <option value="">All cards</option>
+            <option value="soon">Expiring soon ({expiryTotals.soon})</option>
+            <option value="expired">Expired ({expiryTotals.expired})</option>
+          </select>
+        </label>
+        <div className="admin-loyalty-check">
+          <input id="loyalty-show-deleted" type="checkbox" checked={showDeleted} onChange={(e) => setShowDeleted(e.target.checked)} />
+          <label htmlFor="loyalty-show-deleted">Show deleted cards</label>
+        </div>
       </div>
 
-      {cards && cards.length === 0 && <p>No cards found.</p>}
+      {cards && cards.length === 0 && (
+        <p>
+          {expiryFilter === 'soon'
+            ? `No cards expire within the next ${EXPIRY_WARNING_DAYS} days.`
+            : expiryFilter === 'expired'
+              ? 'No cards have expired.'
+              : 'No cards found.'}
+          {expiryFilter && (
+            <>
+              {' '}
+              <button type="button" className="btn btn-ghost admin-small" onClick={() => setExpiryFilter('')}>
+                Show all cards
+              </button>
+            </>
+          )}
+        </p>
+      )}
       {cards && cards.length > 0 && (
         <div className="admin-table-wrap">
           <table className="admin-table">
@@ -356,6 +411,7 @@ export default function AdminLoyalty({ adminKey }) {
                       <td data-label="Valid until" className={c.expired ? 'admin-loyalty-expired' : ''}>
                         {c.expiresOn ? formatDate(c.expiresOn) : 'No expiry'}
                         {c.expired && <em> (expired)</em>}
+                        {c.expiresSoon && <em className="admin-loyalty-soon"> (expires {describeDaysLeft(c.daysLeft)})</em>}
                       </td>
                       <td className="admin-loyalty-rowbtns">
                         <button type="button" className="btn btn-ghost admin-small" onClick={() => openCard(c.cardNumber)}>
@@ -438,6 +494,19 @@ export default function AdminLoyalty({ adminKey }) {
                                     onClick={() => run(() => 'Card enabled.', { action: 'enable', cardNumber: c.cardNumber }, () => loadDetail(c.cardNumber, { withLink: false }))}
                                   >
                                     Enable card
+                                  </button>
+                                </div>
+                              )}
+                              {!c.deleted && c.expiresSoon && (
+                                <div className="admin-loyalty-expirednote" role="status">
+                                  <span>
+                                    <b>
+                                      This card expires {describeDaysLeft(c.daysLeft)} ({formatDate(c.expiresOn)}).
+                                    </b>{' '}
+                                    After that it cannot earn stamps or a free drink. Extend it now if the customer is still coming.
+                                  </span>
+                                  <button type="button" className="btn btn-ghost admin-small" disabled={busy} onClick={() => startEdit(c)}>
+                                    Extend…
                                   </button>
                                 </div>
                               )}

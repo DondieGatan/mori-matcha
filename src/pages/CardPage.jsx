@@ -5,7 +5,7 @@ import BackToTop from '../components/BackToTop'
 import Assistant from '../components/Assistant'
 import { LoyaltyCardBack, LoyaltyCardFront } from '../components/LoyaltyCardArt'
 import { INSTAGRAM_DM_URL } from '../data/menu'
-import { CARD_SLOTS, REWARD_TEXT, STAMPS_PER_REWARD, formatDate } from '../data/loyalty'
+import { CARD_SLOTS, REWARD_TEXT, STAMPS_PER_REWARD, describeDaysLeft, formatDate } from '../data/loyalty'
 
 const TOKEN_KEY = 'mori-card-token'
 const NUMBER_KEY = 'mori-card-number'
@@ -185,7 +185,7 @@ export default function CardPage() {
             {state === 'ready' && card && (
               <>
                 <div className="loyalty-cards">
-                  <LoyaltyCardFront label={card.label} cardNumber={card.cardNumber} expiresOn={card.expiresOn} expired={expired} />
+                  <LoyaltyCardFront label={card.label} cardNumber={card.cardNumber} expiresOn={card.expiresOn} expired={expired} expiresSoon={Boolean(card.expiresSoon)} />
                   <LoyaltyCardBack balance={balance} freshFrom={freshFrom} />
                 </div>
 
@@ -215,7 +215,13 @@ export default function CardPage() {
                       </span>
                     </>
                   )}
-                  {!expired && card.expiresOn && <small className="loyalty-valid-note">Valid until {formatDate(card.expiresOn)}</small>}
+                  {!expired && card.expiresOn && card.expiresSoon && (
+                    <small className="loyalty-valid-note is-soon">
+                      Your card expires {describeDaysLeft(card.daysLeft)} ({formatDate(card.expiresOn)}). Use your stamps before then, or message us on Instagram if you
+                      need more time.
+                    </small>
+                  )}
+                  {!expired && card.expiresOn && !card.expiresSoon && <small className="loyalty-valid-note">Valid until {formatDate(card.expiresOn)}</small>}
                 </div>
 
                 {card.rewardsRedeemed > 0 && (
