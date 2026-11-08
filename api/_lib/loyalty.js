@@ -10,8 +10,13 @@ import { createCipheriv, createDecipheriv, createHash, hkdfSync, randomBytes, ra
 import {
   CARD_NUMBER_ALPHABET,
   CARD_NUMBER_PATTERN,
+  CARD_VALID_DAYS,
   STAMPS_PER_REWARD,
+  addDays,
+  formatDate,
+  normalizeDate,
   stampsForOrder,
+  todayInManila,
 } from '../../src/data/loyalty.js'
 
 const ready = new WeakSet()
@@ -44,11 +49,13 @@ export async function ensureTables(sql) {
     )
   `
   await sql`ALTER TABLE loyalty_cards ADD COLUMN IF NOT EXISTS token_enc TEXT`
+  await sql`ALTER TABLE loyalty_cards ADD COLUMN IF NOT EXISTS expires_on DATE`
+  await sql`ALTER TABLE loyalty_cards ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`
   await sql`
     CREATE TABLE IF NOT EXISTS loyalty_edits (
       id SERIAL PRIMARY KEY,
       card_id INTEGER NOT NULL REFERENCES loyalty_cards(id),
-      field TEXT NOT NULL CHECK (field IN ('name', 'number', 'status', 'link')),
+      field TEXT NOT NULL CHECK (field IN ('name', 'number', 'status', 'link', 'expiry')),
       old_value TEXT,
       new_value TEXT,
       staff TEXT,
@@ -59,9 +66,10 @@ export async function ensureTables(sql) {
   try {
     await sql`
       DO $$ BEGIN
-        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'loyalty_edits_field_ok') THEN
+        IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'loyalty_edits_field_ok2') THEN
           ALTER TABLE loyalty_edits DROP CONSTRAINT IF EXISTS loyalty_edits_field_check;
-          ALTER TABLE loyalty_edits ADD CONSTRAINT loyalty_edits_field_ok CHECK (field IN ('name', 'number', 'status', 'link'));
+          ALTER TABLE loyalty_edits DROP CONSTRAINT IF EXISTS loyalty_edits_field_ok;
+          ALTER TABLE loyalty_edits ADD CONSTRAINT loyalty_edits_field_ok2 CHECK (field IN ('name', 'number', 'status', 'link', 'expiry'));
         END IF;
       END $$
     `
@@ -135,8 +143,9 @@ export async function viewCard(sql, token) {
   if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(token)) return fail(404, 'Card not found')
   await ensureTables(sql)
   const { rows } = await sql`
-    SELECT id, card_number, label, balance, rewards_redeemed
-    FROM loyalty_cards WHERE token_hash = ${hashToken(token)} AND disabled_at IS NULL
+    SELECT id, card_number, label, balance, rewards_redeemed, expires_on::text AS expires_on,
+      (expires_on IS NOT NULL AND expires_on < (now() AT TIME ZONE 'Asia/Manila')::date) AS expired
+    FROM loyalty_cards WHERE token_hash = ${hashToken(token)} AND disabled_at IS NULL AND deleted_at IS NULL
   `
   if (rows.length === 0) return fail(404, 'Card not found')
   const c = rows[0]
@@ -151,6 +160,8 @@ export async function viewCard(sql, token) {
       balance: c.balance,
       rewardsReady: Math.floor(c.balance / STAMPS_PER_REWARD),
       rewardsRedeemed: c.rewards_redeemed,
+      expiresOn: c.expires_on,
+      expired: Boolean(c.expired),
       history: history.map((h) => ({ kind: h.kind, stamps: h.stamps, at: h.created_at })),
     },
   }
@@ -160,31 +171,45 @@ export async function viewCard(sql, token) {
 // Staff side (every function below is only reachable with the admin key; see api/loyalty.js)
 // ---------------------------------------------------------------------------------------------------------------------
 
-export async function createCard(sql, { label }) {
+// Reads the "valid until" a staff member typed: nothing sent means the default, an empty value means no expiry, otherwise a real date.
+function readExpiry(input, { allowPast }) {
+  if (input === undefined) return { ok: true, value: undefined }
+  if (input === null || String(input).trim() === '') return { ok: true, value: null }
+  const date = normalizeDate(input)
+  if (!date) return { ok: false, error: 'That is not a valid date. Pick a date, or leave it empty for no expiry' }
+  if (!allowPast && date < todayInManila()) return { ok: false, error: 'That date has already passed' }
+  return { ok: true, value: date }
+}
+
+export async function createCard(sql, { label, expiresOn }) {
   const name = clean(label, 60)
   if (!name) return fail(400, 'Enter the customer name or Instagram handle')
+  const exp = readExpiry(expiresOn, { allowPast: false })
+  if (!exp.ok) return fail(400, exp.error)
+  const expiry = exp.value === undefined ? addDays(todayInManila(), CARD_VALID_DAYS) : exp.value
   await ensureTables(sql)
   const token = newToken()
   for (let attempt = 0; attempt < 8; attempt++) {
     const cardNumber = newCardNumber()
     const { rows } = await sql`
-      INSERT INTO loyalty_cards (card_number, token_hash, token_enc, label)
-      VALUES (${cardNumber}, ${hashToken(token)}, ${sealToken(token)}, ${name})
+      INSERT INTO loyalty_cards (card_number, token_hash, token_enc, label, expires_on)
+      VALUES (${cardNumber}, ${hashToken(token)}, ${sealToken(token)}, ${name}, ${expiry}::date)
       ON CONFLICT (card_number) DO NOTHING
-      RETURNING card_number, label, balance
+      RETURNING card_number, label, balance, expires_on::text AS expires_on
     `
-    if (rows.length) return { ok: true, card: { cardNumber: rows[0].card_number, label: rows[0].label, balance: 0 }, token }
+    if (rows.length) return { ok: true, card: { cardNumber: rows[0].card_number, label: rows[0].label, balance: 0, expiresOn: rows[0].expires_on }, token }
   }
   return fail(500, 'Could not create a card number, please try again')
 }
 
-export async function searchCards(sql, { q }) {
+export async function searchCards(sql, { q, includeDeleted }) {
   await ensureTables(sql)
   const term = '%' + clean(q, 40).replace(/[\\%_]/g, '\\$&') + '%'
   const { rows } = await sql`
-    SELECT card_number, label, balance, rewards_redeemed, created_at, disabled_at
+    SELECT card_number, label, balance, rewards_redeemed, created_at, disabled_at, deleted_at, expires_on::text AS expires_on,
+      (expires_on IS NOT NULL AND expires_on < (now() AT TIME ZONE 'Asia/Manila')::date) AS expired
     FROM loyalty_cards
-    WHERE card_number ILIKE ${term} OR label ILIKE ${term}
+    WHERE (card_number ILIKE ${term} OR label ILIKE ${term}) AND (deleted_at IS NULL OR ${Boolean(includeDeleted)}::boolean)
     ORDER BY created_at DESC LIMIT 50
   `
   return {
@@ -197,6 +222,9 @@ export async function searchCards(sql, { q }) {
       rewardsRedeemed: c.rewards_redeemed,
       createdAt: c.created_at,
       disabled: Boolean(c.disabled_at),
+      deleted: Boolean(c.deleted_at),
+      expiresOn: c.expires_on,
+      expired: Boolean(c.expired),
     })),
   }
 }
@@ -262,7 +290,8 @@ export async function stampCard(sql, { cardNumber, orderNumber, staff, note }) {
       INSERT INTO loyalty_ledger (card_id, kind, stamps, order_number, staff, note)
       SELECT c.id, 'stamp', ${stamps}::int, ${order}::text, ${clean(staff, 40) || null}::text, ${clean(note, 120) || null}::text
       FROM loyalty_cards c
-      WHERE c.card_number = ${number} AND c.disabled_at IS NULL
+      WHERE c.card_number = ${number} AND c.disabled_at IS NULL AND c.deleted_at IS NULL
+        AND (c.expires_on IS NULL OR c.expires_on >= (now() AT TIME ZONE 'Asia/Manila')::date)
         AND EXISTS (SELECT 1 FROM orders o WHERE o.order_number = ${order} AND o.deleted_at IS NULL AND o.status IN ('paid', 'shipped'))
       ON CONFLICT (order_number) WHERE kind = 'stamp' DO NOTHING
       RETURNING card_id, stamps
@@ -275,6 +304,14 @@ export async function stampCard(sql, { cardNumber, orderNumber, staff, note }) {
   if (rows.length === 0) {
     const { rows: used } = await sql`SELECT 1 FROM loyalty_ledger WHERE kind = 'stamp' AND order_number = ${order}`
     if (used.length) return fail(409, 'That order has already been stamped')
+    const { rows: st } = await sql`
+      SELECT disabled_at, deleted_at, expires_on::text AS expires_on,
+        (expires_on IS NOT NULL AND expires_on < (now() AT TIME ZONE 'Asia/Manila')::date) AS expired
+      FROM loyalty_cards WHERE card_number = ${number}
+    `
+    if (st.length && !st[0].disabled_at && !st[0].deleted_at && st[0].expired) {
+      return fail(409, `This card expired on ${formatDate(st[0].expires_on)}. Extend it (Edit, then Valid until) before adding stamps.`)
+    }
     return fail(404, 'No active card with that number')
   }
   return { ok: true, stamped: stamps, card: { cardNumber: rows[0].card_number, label: rows[0].label, balance: rows[0].balance } }
@@ -290,7 +327,8 @@ export async function redeemReward(sql, { cardNumber, staff, note }) {
     WITH upd AS (
       UPDATE loyalty_cards c
       SET balance = c.balance - ${STAMPS_PER_REWARD}::int, rewards_redeemed = c.rewards_redeemed + 1
-      WHERE c.card_number = ${number} AND c.disabled_at IS NULL AND c.balance >= ${STAMPS_PER_REWARD}::int
+      WHERE c.card_number = ${number} AND c.disabled_at IS NULL AND c.deleted_at IS NULL AND c.balance >= ${STAMPS_PER_REWARD}::int
+        AND (c.expires_on IS NULL OR c.expires_on >= (now() AT TIME ZONE 'Asia/Manila')::date)
         AND NOT EXISTS (
           SELECT 1 FROM loyalty_ledger l WHERE l.card_id = c.id AND l.kind = 'redeem' AND l.created_at > now() - interval '10 seconds'
         )
@@ -303,8 +341,13 @@ export async function redeemReward(sql, { cardNumber, staff, note }) {
     SELECT card_number, label, balance FROM upd
   `
   if (rows.length === 0) {
-    const { rows: c } = await sql`SELECT balance, disabled_at FROM loyalty_cards WHERE card_number = ${number}`
-    if (c.length === 0 || c[0].disabled_at) return fail(404, 'No active card with that number')
+    const { rows: c } = await sql`
+      SELECT balance, disabled_at, deleted_at, expires_on::text AS expires_on,
+        (expires_on IS NOT NULL AND expires_on < (now() AT TIME ZONE 'Asia/Manila')::date) AS expired
+      FROM loyalty_cards WHERE card_number = ${number}
+    `
+    if (c.length === 0 || c[0].disabled_at || c[0].deleted_at) return fail(404, 'No active card with that number')
+    if (c[0].expired) return fail(409, `This card expired on ${formatDate(c[0].expires_on)}. Extend it (Edit, then Valid until) before giving a free drink.`)
     if (c[0].balance < STAMPS_PER_REWARD) return fail(409, `Not enough stamps yet: ${c[0].balance} of ${STAMPS_PER_REWARD}`)
     return fail(409, 'A reward was just redeemed on this card, wait a moment before redeeming another')
   }
@@ -358,7 +401,7 @@ export async function regenerateLink(sql, { cardNumber, staff }) {
   const { rows } = await sql`
     WITH upd AS (
       UPDATE loyalty_cards SET token_hash = ${hashToken(token)}, token_enc = ${sealToken(token)}
-      WHERE card_number = ${number} AND disabled_at IS NULL
+      WHERE card_number = ${number} AND disabled_at IS NULL AND deleted_at IS NULL
       RETURNING id, card_number, label
     ), log AS (
       INSERT INTO loyalty_edits (card_id, field, old_value, new_value, staff)
@@ -380,7 +423,7 @@ export async function setCardDisabled(sql, { cardNumber, disabled, staff }) {
   const want = Boolean(disabled)
   const { rows } = await sql`
     WITH cur AS (
-      SELECT id, disabled_at IS NOT NULL AS was FROM loyalty_cards WHERE card_number = ${number}
+      SELECT id, disabled_at IS NOT NULL AS was FROM loyalty_cards WHERE card_number = ${number} AND deleted_at IS NULL
     ), upd AS (
       UPDATE loyalty_cards c
       SET disabled_at = CASE WHEN ${want}::boolean THEN COALESCE(c.disabled_at, now()) ELSE NULL END
@@ -404,8 +447,9 @@ export async function cardLink(sql, { cardNumber }) {
   const number = normalizeCardNumber(cardNumber)
   if (!number) return fail(400, 'That is not a valid card number')
   await ensureTables(sql)
-  const { rows } = await sql`SELECT token_hash, token_enc, disabled_at FROM loyalty_cards WHERE card_number = ${number}`
+  const { rows } = await sql`SELECT token_hash, token_enc, disabled_at, deleted_at FROM loyalty_cards WHERE card_number = ${number}`
   if (rows.length === 0) return fail(404, 'No card with that number')
+  if (rows[0].deleted_at) return { ok: true, token: null, reason: 'deleted' }
   if (!rows[0].token_enc) return { ok: true, token: null, reason: 'not-saved' }
   const token = openToken(rows[0].token_enc)
   if (!token || hashToken(token) !== rows[0].token_hash) return { ok: true, token: null, reason: 'unreadable' }
@@ -414,7 +458,7 @@ export async function cardLink(sql, { cardNumber }) {
 
 // Fix a typo in the customer's name or the card number. The stamps, history and secret link stay exactly as they are; every
 // change is written to the edit history (who, what, when). A card number must keep the LC-XXXX shape and be unused.
-export async function editCard(sql, { cardNumber, label, newCardNumber, staff }) {
+export async function editCard(sql, { cardNumber, label, newCardNumber, expiresOn, staff }) {
   const number = normalizeCardNumber(cardNumber)
   if (!number) return fail(400, 'That is not a valid card number')
   const wantsName = label !== undefined && label !== null
@@ -423,25 +467,35 @@ export async function editCard(sql, { cardNumber, label, newCardNumber, staff })
   const wantsNumber = newCardNumber !== undefined && newCardNumber !== null && String(newCardNumber).trim() !== ''
   const target = wantsNumber ? normalizeCardNumber(newCardNumber) : null
   if (wantsNumber && !target) return fail(400, 'A card number looks like LC-7K3Q: LC- and 4 letters or numbers (no O, I, L, 0 or 1)')
-  if (!wantsName && !wantsNumber) return fail(400, 'Nothing to change')
+  const wantsExpiry = expiresOn !== undefined
+  const exp = readExpiry(expiresOn, { allowPast: true })
+  if (!exp.ok) return fail(400, exp.error)
+  if (!wantsName && !wantsNumber && !wantsExpiry) return fail(400, 'Nothing to change')
   await ensureTables(sql)
 
-  const { rows: found } = await sql`SELECT id, card_number, label, balance FROM loyalty_cards WHERE card_number = ${number}`
+  const { rows: found } = await sql`SELECT id, card_number, label, balance, expires_on::text AS expires_on, deleted_at FROM loyalty_cards WHERE card_number = ${number}`
   if (found.length === 0) return fail(404, 'No card with that number')
+  if (found[0].deleted_at) return fail(404, 'That card was deleted. Restore it first')
   const cur = found[0]
   const nextName = name ?? cur.label
   const nextNumber = target ?? cur.card_number
+  const nextExpiry = wantsExpiry ? exp.value : cur.expires_on
   const nameChanged = nextName !== cur.label
   const numberChanged = nextNumber !== cur.card_number
-  const same = { cardNumber: cur.card_number, label: cur.label, balance: cur.balance }
-  if (!nameChanged && !numberChanged) return { ok: true, changed: false, card: same }
+  const expiryChanged = nextExpiry !== cur.expires_on
+  const same = { cardNumber: cur.card_number, label: cur.label, balance: cur.balance, expiresOn: cur.expires_on }
+  if (!nameChanged && !numberChanged && !expiryChanged) return { ok: true, changed: false, card: same }
 
   const who = clean(staff, 40) || null
   try {
     const { rows } = await sql`
       WITH upd AS (
-        UPDATE loyalty_cards SET label = ${nextName}::text, card_number = ${nextNumber}::text
-        WHERE id = ${cur.id}::int RETURNING card_number, label, balance
+        UPDATE loyalty_cards SET label = ${nextName}::text, card_number = ${nextNumber}::text, expires_on = ${nextExpiry}::date
+        WHERE id = ${cur.id}::int RETURNING card_number, label, balance, expires_on::text AS expires_on
+      ), ee AS (
+        INSERT INTO loyalty_edits (card_id, field, old_value, new_value, staff)
+        SELECT ${cur.id}::int, 'expiry', ${cur.expires_on ?? 'no expiry'}::text, ${nextExpiry ?? 'no expiry'}::text, ${who}::text WHERE ${expiryChanged}::boolean
+        RETURNING id
       ), en AS (
         INSERT INTO loyalty_edits (card_id, field, old_value, new_value, staff)
         SELECT ${cur.id}::int, 'name', ${cur.label}::text, ${nextName}::text, ${who}::text WHERE ${nameChanged}::boolean
@@ -451,11 +505,38 @@ export async function editCard(sql, { cardNumber, label, newCardNumber, staff })
         SELECT ${cur.id}::int, 'number', ${cur.card_number}::text, ${nextNumber}::text, ${who}::text WHERE ${numberChanged}::boolean
         RETURNING id
       )
-      SELECT card_number, label, balance FROM upd
+      SELECT card_number, label, balance, expires_on FROM upd
     `
-    return { ok: true, changed: true, card: { cardNumber: rows[0].card_number, label: rows[0].label, balance: rows[0].balance } }
+    return { ok: true, changed: true, card: { cardNumber: rows[0].card_number, label: rows[0].label, balance: rows[0].balance, expiresOn: rows[0].expires_on } }
   } catch (err) {
     if (err && (err.code === '23505' || /unique|duplicate/i.test(String(err.message)))) return fail(409, 'Another card already has that number')
     throw err
   }
+}
+
+// Delete a card (or bring it back). Deleting hides it from the list and turns its link and number off, but nothing is erased: the
+// stamps and history stay, and its stamped orders stay used, so "one stamp per order, ever" still holds. It can be restored.
+export async function setCardDeleted(sql, { cardNumber, deleted, staff }) {
+  const number = normalizeCardNumber(cardNumber)
+  if (!number) return fail(400, 'That is not a valid card number')
+  await ensureTables(sql)
+  const want = Boolean(deleted)
+  const { rows } = await sql`
+    WITH cur AS (
+      SELECT id, deleted_at IS NOT NULL AS was FROM loyalty_cards WHERE card_number = ${number}
+    ), upd AS (
+      UPDATE loyalty_cards c
+      SET deleted_at = CASE WHEN ${want}::boolean THEN COALESCE(c.deleted_at, now()) ELSE NULL END
+      FROM cur WHERE c.id = cur.id
+      RETURNING c.id
+    ), log AS (
+      INSERT INTO loyalty_edits (card_id, field, old_value, new_value, staff)
+      SELECT cur.id, 'status', CASE WHEN cur.was THEN 'deleted' ELSE 'active' END, CASE WHEN ${want}::boolean THEN 'deleted' ELSE 'restored' END, ${clean(staff, 40) || null}::text
+      FROM cur WHERE cur.was <> ${want}::boolean
+      RETURNING id
+    )
+    SELECT id FROM upd
+  `
+  if (rows.length === 0) return fail(404, 'No card with that number')
+  return { ok: true }
 }

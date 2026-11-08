@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { REWARD_TEXT, STAMPS_PER_REWARD } from '../data/loyalty'
+import { REWARD_TEXT, STAMPS_PER_REWARD, formatDate } from '../data/loyalty'
 
 // The digital loyalty card: a green front and the stamp card. Pure display; the stamps themselves live on the server and
 // are added by the café team, so nothing on this card can be edited from the browser.
@@ -60,14 +60,14 @@ function Stamp({ index, animate }) {
 }
 
 // The front of the card is Mori's own picture. The member's name and card number sit on a soft strip at the bottom.
-export function LoyaltyCardFront({ label, cardNumber }) {
+export function LoyaltyCardFront({ label, cardNumber, expiresOn = null, expired = false }) {
   const unit = useCardUnit()
   return (
     <div
       ref={unit}
       className="loyalty-front"
       role="img"
-      aria-label={`Mori Matcha loyalty card${label ? ' for ' + label : ''}${cardNumber ? ', card number ' + cardNumber : ''}`}
+      aria-label={`Mori Matcha loyalty card${label ? ' for ' + label : ''}${cardNumber ? ', card number ' + cardNumber : ''}${expiresOn ? (expired ? ', expired on ' : ', valid until ') + formatDate(expiresOn) : ''}`}
     >
       <img className="loyalty-sheet-bg" src="/loyalty/card-front.webp" alt="" width="1080" height="766" draggable="false" decoding="async" />
       <div className="loyalty-front-bar">
@@ -75,6 +75,12 @@ export function LoyaltyCardFront({ label, cardNumber }) {
           <small>Member</small>
           <span>{label || 'Your name'}</span>
         </div>
+        {expiresOn && (
+          <div className={'loyalty-front-valid' + (expired ? ' is-expired' : '')}>
+            <small>{expired ? 'Expired' : 'Valid until'}</small>
+            <span>{formatDate(expiresOn)}</span>
+          </div>
+        )}
         <div className="loyalty-front-id">
           <small>Card no.</small>
           <span>{cardNumber || 'LC-····'}</span>

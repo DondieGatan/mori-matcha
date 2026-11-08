@@ -8,7 +8,10 @@ import handler, { _resetLimits } from '../api/loyalty.js'
 import { sealToken, openToken } from '../api/_lib/loyalty.js'
 import { setSqlForTests } from '../api/_lib/db.js'
 import { isAuthorized } from '../api/_lib/auth.js'
-import { STAMPS_PER_REWARD, CARD_SLOTS, stampsForOrder, CHEAPEST_DRINK_PRICE, MAX_STAMPS_PER_ORDER } from '../src/data/loyalty.js'
+import {
+  STAMPS_PER_REWARD, CARD_SLOTS, stampsForOrder, CHEAPEST_DRINK_PRICE, MAX_STAMPS_PER_ORDER,
+  CARD_VALID_DAYS, addDays, todayInManila, normalizeDate, formatDate,
+} from '../src/data/loyalty.js'
 
 const KEY = 'test-admin-key-123'
 process.env.ADMIN_KEY = KEY
@@ -136,7 +139,7 @@ test('the view only ever returns that one card', async () => {
   await fill(a.number, 2)
   const v = await call({ action: 'view', token: a.token }, { key: null })
   assert.equal(v.body.card.balance, 2)
-  assert.deepEqual(Object.keys(v.body.card).sort(), ['balance', 'cardNumber', 'history', 'label', 'rewardsReady', 'rewardsRedeemed'])
+  assert.deepEqual(Object.keys(v.body.card).sort(), ['balance', 'cardNumber', 'expired', 'expiresOn', 'history', 'label', 'rewardsReady', 'rewardsRedeemed'])
   assert.ok(!JSON.stringify(v.body).includes('B'.repeat(1) + '"')) // no second card's label
 })
 
@@ -149,6 +152,8 @@ test('every staff action is refused without the admin key', async () => {
     { action: 'stamp', cardNumber: number, orderNumber: 'MM-1' }, { action: 'redeem', cardNumber: number },
     { action: 'void', entryId: 1 }, { action: 'regenerate', cardNumber: number }, { action: 'disable', cardNumber: number },
     { action: 'link', cardNumber: number }, { action: 'edit', cardNumber: number, label: 'Hacked' },
+    { action: 'delete', cardNumber: number }, { action: 'restore', cardNumber: number },
+    { action: 'edit', cardNumber: number, expiresOn: '2099-01-01' },
   ]) {
     // a different caller address each time, so the lockout (tested separately) does not get in the way
     const ip = () => '10.' + Math.floor(Math.random() * 250) + '.' + Math.floor(Math.random() * 250) + '.' + Math.floor(Math.random() * 250)
@@ -598,6 +603,7 @@ test('making a new link is recorded with who did it', async () => {
 test('a database made before status changes were recorded is upgraded in place', async () => {
   const { number } = await newCard()
   // put the table back the way it was when it only accepted name and number changes
+  await db.exec(`ALTER TABLE loyalty_edits DROP CONSTRAINT IF EXISTS loyalty_edits_field_ok2`)
   await db.exec(`ALTER TABLE loyalty_edits DROP CONSTRAINT IF EXISTS loyalty_edits_field_ok`)
   await db.exec(`ALTER TABLE loyalty_edits DROP CONSTRAINT IF EXISTS loyalty_edits_field_check`)
   await db.exec(`ALTER TABLE loyalty_edits ADD CONSTRAINT loyalty_edits_field_check CHECK (field IN ('name', 'number'))`)
@@ -608,4 +614,198 @@ test('a database made before status changes were recorded is upgraded in place',
   assert.equal((await call({ action: 'disable', cardNumber: number, staff: 'Ana' })).code, 200)
   assert.equal((await call({ action: 'edit', cardNumber: number, label: 'Still works' })).code, 200)
   assert.equal((await call({ action: 'ledger', cardNumber: number })).body.edits.length, 2)
+})
+
+// ---- card expiry ---------------------------------------------------------------------------------------------------------
+const setExpiry = (number, date) => db.query(`UPDATE loyalty_cards SET expires_on = $1 WHERE card_number = $2`, [date, number])
+const today = () => todayInManila()
+
+test('the date helpers: plain calendar dates, validated, formatted, and counted in days', () => {
+  assert.equal(normalizeDate('2027-11-08'), '2027-11-08')
+  for (const bad of ['', null, undefined, '2027-13-01', '2027-02-30', '27-11-08', '2027/11/08', '2019-12-31', '2101-01-01', 'abc', '2027-11-08T00:00']) {
+    assert.equal(normalizeDate(bad), null, String(bad))
+  }
+  assert.equal(addDays('2026-12-31', 1), '2027-01-01')
+  assert.equal(addDays('2024-02-28', 1), '2024-02-29')
+  assert.equal(addDays('2026-11-08', 365), '2027-11-08')
+  assert.equal(formatDate('2027-11-08'), 'Nov 8, 2027')
+  assert.equal(formatDate('nonsense'), '')
+  assert.match(todayInManila(), /^\d{4}-\d{2}-\d{2}$/)
+})
+
+test('a new card is valid for a year by default, and the customer can see the date', async () => {
+  const { number, token } = await newCard('Maria')
+  const v = await call({ action: 'view', token }, { key: null })
+  assert.equal(v.body.card.expiresOn, addDays(today(), CARD_VALID_DAYS))
+  assert.equal(v.body.card.expired, false)
+  const s = await call({ action: 'search', q: number })
+  assert.equal(s.body.cards[0].expiresOn, addDays(today(), CARD_VALID_DAYS))
+  assert.equal(s.body.cards[0].expired, false)
+})
+
+test('staff can choose the date when making a card, or choose no expiry, and bad dates are refused', async () => {
+  const set = await call({ action: 'create', label: 'A', expiresOn: addDays(today(), 30) })
+  assert.equal(set.body.card.expiresOn, addDays(today(), 30))
+  const none = await call({ action: 'create', label: 'B', expiresOn: '' })
+  assert.equal(none.body.card.expiresOn, null)
+  assert.equal((await call({ action: 'view', token: none.body.token }, { key: null })).body.card.expired, false)
+  assert.equal((await call({ action: 'create', label: 'C', expiresOn: null })).body.card.expiresOn, null)
+  for (const bad of ['2027-02-30', 'tomorrow', '1999-01-01', "2027-01-01'; DROP TABLE loyalty_cards;--"]) {
+    assert.equal((await call({ action: 'create', label: 'D', expiresOn: bad })).code, 400, bad)
+  }
+  assert.equal((await call({ action: 'create', label: 'E', expiresOn: addDays(today(), -1) })).code, 400, 'a date in the past')
+  assert.equal((await db.query(`SELECT COUNT(*) AS n FROM loyalty_cards`)).rows[0].n, 3)
+})
+
+test('an expired card still opens, but cannot earn stamps or a free drink, and the message says why', async () => {
+  const { number, token } = await newCard('Maria')
+  await fill(number, 9)
+  await setExpiry(number, addDays(today(), -1))
+  const v = await call({ action: 'view', token }, { key: null })
+  assert.equal(v.code, 200)
+  assert.equal(v.body.card.expired, true)
+  assert.equal(v.body.card.balance, 9)
+  await addOrder('MM-LATE')
+  const st = await stamp(number, 'MM-LATE')
+  assert.equal(st.code, 409)
+  assert.match(st.body.error, /expired on/)
+  const rd = await call({ action: 'redeem', cardNumber: number })
+  assert.equal(rd.code, 409)
+  assert.match(rd.body.error, /expired on/)
+  assert.equal(await balance(number), 9)
+  assert.equal((await db.query(`SELECT rewards_redeemed FROM loyalty_cards`)).rows[0].rewards_redeemed, 0)
+})
+
+test('the last valid day still works, and the day after does not', async () => {
+  const { number } = await newCard()
+  await addOrder('MM-A')
+  await addOrder('MM-B')
+  await setExpiry(number, today())
+  assert.equal((await stamp(number, 'MM-A')).code, 200)
+  await setExpiry(number, addDays(today(), -1))
+  assert.equal((await stamp(number, 'MM-B')).code, 409)
+})
+
+test('extending an expired card makes it work again, and the change is recorded', async () => {
+  const { number, token } = await newCard('Maria')
+  await fill(number, 9)
+  await setExpiry(number, addDays(today(), -10))
+  const next = addDays(today(), 90)
+  const r = await call({ action: 'edit', cardNumber: number, expiresOn: next, staff: 'Ana' })
+  assert.equal(r.code, 200)
+  assert.equal(r.body.changed, true)
+  assert.equal(r.body.card.expiresOn, next)
+  assert.equal((await call({ action: 'view', token }, { key: null })).body.card.expired, false)
+  assert.equal((await call({ action: 'redeem', cardNumber: number })).code, 200)
+  const l = await call({ action: 'ledger', cardNumber: number })
+  const e = l.body.edits.find((x) => x.field === 'expiry')
+  assert.deepEqual([e.old_value, e.new_value, e.staff], [addDays(today(), -10), next, 'Ana'])
+})
+
+test('expiry can be removed or set to a past date by staff, and bad dates are refused without changing anything', async () => {
+  const { number, token } = await newCard()
+  assert.equal((await call({ action: 'edit', cardNumber: number, expiresOn: '' })).body.card.expiresOn, null)
+  assert.equal((await call({ action: 'view', token }, { key: null })).body.card.expiresOn, null)
+  const past = addDays(today(), -5)
+  assert.equal((await call({ action: 'edit', cardNumber: number, expiresOn: past })).code, 200)
+  assert.equal((await call({ action: 'view', token }, { key: null })).body.card.expired, true)
+  for (const bad of ['2027-02-30', 'soon', '2101-01-01']) assert.equal((await call({ action: 'edit', cardNumber: number, expiresOn: bad })).code, 400, bad)
+  assert.equal((await db.query(`SELECT expires_on::text AS d FROM loyalty_cards`)).rows[0].d, past)
+  const same = await call({ action: 'edit', cardNumber: number, expiresOn: past })
+  assert.equal(same.body.changed, false)
+})
+
+test('a stamp can still be undone on an expired card, and the balance rule still holds', async () => {
+  const { number } = await newCard()
+  await fill(number, 2)
+  await setExpiry(number, addDays(today(), -1))
+  const id = (await db.query(`SELECT id FROM loyalty_ledger WHERE kind = 'stamp' ORDER BY id DESC LIMIT 1`)).rows[0].id
+  assert.equal((await call({ action: 'void', entryId: id })).code, 200)
+  assert.equal(await balance(number), 1)
+})
+
+// ---- deleting a card -----------------------------------------------------------------------------------------------------
+test('deleting a card hides it and turns it off, but keeps its stamps and history', async () => {
+  const { number, token } = await newCard('@jade')
+  await fill(number, 3)
+  assert.equal((await call({ action: 'delete', cardNumber: number, staff: 'Ana' })).code, 200)
+  assert.equal((await call({ action: 'search', q: '' })).body.cards.length, 0)
+  assert.equal((await call({ action: 'view', token }, { key: null })).code, 404)
+  await addOrder('MM-NEW')
+  assert.equal((await stamp(number, 'MM-NEW')).code, 404)
+  assert.equal((await call({ action: 'redeem', cardNumber: number })).code, 404)
+  assert.equal((await call({ action: 'regenerate', cardNumber: number })).code, 404)
+  assert.equal((await call({ action: 'disable', cardNumber: number })).code, 404)
+  assert.equal((await call({ action: 'edit', cardNumber: number, label: 'x' })).code, 404)
+  assert.equal((await call({ action: 'link', cardNumber: number })).body.reason, 'deleted')
+  assert.equal(Number((await db.query(`SELECT COUNT(*) AS n FROM loyalty_cards`)).rows[0].n), 1, 'the row is still there')
+  assert.equal(Number((await db.query(`SELECT COUNT(*) AS n FROM loyalty_ledger`)).rows[0].n), 3, 'and so is its history')
+})
+
+test('a deleted card can be found again and restored, with everything as it was', async () => {
+  const { number, token } = await newCard('@jade')
+  await fill(number, 4)
+  await call({ action: 'delete', cardNumber: number, staff: 'Ana' })
+  const shown = await call({ action: 'search', q: '', includeDeleted: true })
+  assert.equal(shown.body.cards.length, 1)
+  assert.equal(shown.body.cards[0].deleted, true)
+  assert.equal((await call({ action: 'restore', cardNumber: number, staff: 'Ben' })).code, 200)
+  const v = await call({ action: 'view', token }, { key: null })
+  assert.equal(v.code, 200)
+  assert.equal(v.body.card.balance, 4)
+  assert.equal((await call({ action: 'search', q: '' })).body.cards[0].deleted, false)
+  assert.equal((await call({ action: 'link', cardNumber: number })).body.token, token)
+  const l = await call({ action: 'ledger', cardNumber: number })
+  assert.deepEqual(l.body.edits.filter((e) => e.field === 'status').map((e) => [e.new_value, e.staff]), [['restored', 'Ben'], ['deleted', 'Ana']])
+})
+
+test('deleting twice records once, an unknown card is refused, and deleting never frees an order to be stamped again', async () => {
+  const a = await newCard('A')
+  await addOrder('MM-ONE')
+  assert.equal((await stamp(a.number, 'MM-ONE')).code, 200)
+  await call({ action: 'delete', cardNumber: a.number, staff: 'Ana' })
+  await call({ action: 'delete', cardNumber: a.number, staff: 'Ben' })
+  assert.equal((await call({ action: 'ledger', cardNumber: a.number })).body.edits.length, 1)
+  assert.equal((await call({ action: 'delete', cardNumber: 'LC-ZZZZ' })).code, 404)
+  const b = await newCard('B')
+  const again = await stamp(b.number, 'MM-ONE')
+  assert.equal(again.code, 409, 'the order stays used even though the card that used it was deleted')
+  assert.match(again.body.error, /already been stamped/)
+})
+
+test('a deleted card keeps its number reserved, so nobody else can take it', async () => {
+  const a = await newCard('A')
+  const b = await newCard('B')
+  await call({ action: 'delete', cardNumber: a.number })
+  assert.equal((await call({ action: 'edit', cardNumber: b.number, newCardNumber: a.number })).code, 409)
+})
+
+test('the ledger total still equals the balance after expiry changes, deleting and restoring', async () => {
+  const { number } = await newCard()
+  await fill(number, 5)
+  await call({ action: 'edit', cardNumber: number, expiresOn: addDays(today(), -2) })
+  await call({ action: 'delete', cardNumber: number })
+  await call({ action: 'restore', cardNumber: number })
+  const { rows } = await db.query(`SELECT c.balance, COALESCE(SUM(l.stamps), 0) AS total FROM loyalty_cards c LEFT JOIN loyalty_ledger l ON l.card_id = c.id GROUP BY c.id`)
+  assert.equal(Number(rows[0].balance), Number(rows[0].total))
+})
+
+test('a database made before expiry and deleting existed is upgraded in place and keeps its cards working', async () => {
+  const { number, token } = await newCard('Old timer')
+  await fill(number, 2)
+  // the way the live tables looked before: no expiry or deleted columns, and an edit history that only knew four kinds of change
+  await db.exec(`ALTER TABLE loyalty_cards DROP COLUMN expires_on, DROP COLUMN deleted_at`)
+  await db.exec(`ALTER TABLE loyalty_edits DROP CONSTRAINT IF EXISTS loyalty_edits_field_ok2`)
+  await db.exec(`ALTER TABLE loyalty_edits DROP CONSTRAINT IF EXISTS loyalty_edits_field_check`)
+  await db.exec(`ALTER TABLE loyalty_edits ADD CONSTRAINT loyalty_edits_field_ok CHECK (field IN ('name', 'number', 'status', 'link'))`)
+  await assert.rejects(db.query(`INSERT INTO loyalty_edits (card_id, field) VALUES (1, 'expiry')`))
+  setSqlForTests((...args) => sql(...args)) // a fresh server instance that has not checked the tables yet
+  const v = await call({ action: 'view', token }, { key: null })
+  assert.equal(v.code, 200)
+  assert.equal(v.body.card.balance, 2)
+  assert.equal(v.body.card.expiresOn, null, 'an old card gets no expiry, so no existing customer is suddenly locked out')
+  assert.equal(v.body.card.expired, false)
+  assert.equal((await call({ action: 'edit', cardNumber: number, expiresOn: addDays(today(), 60) })).code, 200)
+  assert.equal((await call({ action: 'delete', cardNumber: number })).code, 200)
+  assert.equal((await call({ action: 'restore', cardNumber: number })).code, 200)
 })

@@ -35,7 +35,7 @@ const FAQ_ITEMS = [
       <>
         Yes. Every drink in a paid order earns a stamp, and after 9 stamps your 10th drink is free. Ask us for your card on Instagram and we'll send you a
         private link to keep it on your phone, then <a href="/card">view your card</a> any time. Stamps are added by our team, so just quote your card number
-        when you order.
+        when you order. Each card shows the date it is valid until, so use it before then.
       </>
     ),
   },
