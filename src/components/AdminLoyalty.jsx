@@ -61,6 +61,7 @@ export default function AdminLoyalty({ adminKey }) {
   const [newLabel, setNewLabel] = useState('')
   const [newExpiry, setNewExpiry] = useState(defaultExpiry) // the "valid until" for a new card; empty means no expiry
   const [showDeleted, setShowDeleted] = useState(false)
+  const [showRemoved, setShowRemoved] = useState(false)
   const [created, setCreated] = useState(null) // { cardNumber, label, link }
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
@@ -225,11 +226,15 @@ export default function AdminLoyalty({ adminKey }) {
     )
   }
 
-  // Stamps, free drinks, undos and edits in one list, newest first.
-  const history = [
-    ...ledger.map((l) => ({ ...l, type: 'ledger', key: 'l' + l.id })),
+  // Stamps, free drinks, deleted entries and edits in one list, newest first. A deleted entry is never erased (the ledger only
+  // ever grows): it and its "Deleted" record are hidden from the list unless "Show deleted entries" is ticked.
+  const removedIds = new Set(ledger.filter((l) => l.kind === 'void').map((l) => l.voids_id))
+  const allHistory = [
+    ...ledger.map((l) => ({ ...l, type: 'ledger', key: 'l' + l.id, removed: removedIds.has(l.id) })),
     ...edits.map((e) => ({ ...e, type: 'edit', key: 'e' + e.id })),
   ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || (a.type === 'edit' ? -1 : 1))
+  const hiddenCount = allHistory.filter((h) => h.type === 'ledger' && (h.kind === 'void' || h.removed)).length
+  const history = showRemoved ? allHistory : allHistory.filter((h) => !(h.type === 'ledger' && (h.kind === 'void' || h.removed)))
 
   return (
     <div className="admin-loyalty">
@@ -603,6 +608,12 @@ export default function AdminLoyalty({ adminKey }) {
                               </div>
 
                               <h4>History</h4>
+                              {hiddenCount > 0 && (
+                                <div className="admin-loyalty-check">
+                                  <input id={'loyalty-show-removed-' + c.cardNumber} type="checkbox" checked={showRemoved} onChange={(e) => setShowRemoved(e.target.checked)} />
+                                  <label htmlFor={'loyalty-show-removed-' + c.cardNumber}>Show deleted entries</label>
+                                </div>
+                              )}
                               <ul className="admin-loyalty-ledger">
                                 {history.map((h) =>
                                   h.type === 'edit' ? (
@@ -615,25 +626,34 @@ export default function AdminLoyalty({ adminKey }) {
                                       <time>{new Date(h.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</time>
                                     </li>
                                   ) : (
-                                    <li key={h.key}>
+                                    <li key={h.key} className={h.removed ? 'is-removed' : h.kind === 'void' ? 'is-void' : undefined}>
                                       <span>
-                                        <b>{h.kind === 'stamp' ? `+${h.stamps} stamp${h.stamps === 1 ? '' : 's'}` : h.kind === 'redeem' ? 'Free drink' : 'Undone'}</b>
+                                        <b>{h.kind === 'stamp' ? `+${h.stamps} stamp${h.stamps === 1 ? '' : 's'}` : h.kind === 'redeem' ? 'Free drink' : 'Entry deleted'}</b>
+                                        {h.removed ? ' · deleted' : ''}
                                         {h.order_number ? ` · order ${h.order_number}` : ''}
                                         {h.staff ? ` · by ${h.staff}` : ''}
                                         {h.note ? ` · ${h.note}` : ''}
                                       </span>
                                       <time>{new Date(h.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</time>
-                                      {(h.kind === 'stamp' || h.kind === 'redeem') && (
+                                      {(h.kind === 'stamp' || h.kind === 'redeem') && !h.removed && (
                                         <button
                                           type="button"
                                           className="admin-delete-btn"
                                           disabled={busy}
                                           onClick={() => {
-                                            if (!window.confirm('Undo this entry? It stays in the history as undone.')) return
-                                            run(() => 'Entry undone.', { action: 'void', entryId: h.id }, () => loadDetail(c.cardNumber, { withLink: false }))
+                                            const what = h.kind === 'redeem' ? 'The free drink is put back on the card' : 'The stamp is taken off the card'
+                                            if (
+                                              !window.confirm(
+                                                `Delete this entry?
+
+${what}. It disappears from this list but stays on record ("Show deleted entries"), and its order cannot be stamped a second time.`,
+                                              )
+                                            )
+                                              return
+                                            run(() => 'Entry deleted.', { action: 'void', entryId: h.id }, () => loadDetail(c.cardNumber, { withLink: false }))
                                           }}
                                         >
-                                          Undo
+                                          Delete
                                         </button>
                                       )}
                                     </li>
