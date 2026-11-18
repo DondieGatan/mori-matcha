@@ -5,7 +5,16 @@ export const SUGAR_DATA = {
   'strawberry-matcha-latte': { unit: 'Agave Syrup', levels: { '25%': 5, '50%': 8, Regular: 15, Sweet: 20 } },
   'matcha-sea-salt': { unit: 'Agave Syrup', levels: { '25%': 5, '50%': 8, Regular: 15, Sweet: 20 } },
   'oreo-cloud-matcha': { unit: 'Condensed Milk', levels: { '25%': 3, '50%': 5, Regular: 8, Sweet: 15 } },
+  'blueberry-matcha': { unit: 'Agave Syrup', levels: { '25%': 5, '50%': 8, Regular: 15, Sweet: 20 } },
 }
+
+// Every drink comes in both sizes. The listed price is the 12oz price; 16oz adds a flat surcharge on top.
+export const SIZE_SURCHARGE = 30
+export const SIZES = [
+  { key: '12oz', label: '12oz', surcharge: 0 },
+  { key: '16oz', label: '16oz', surcharge: SIZE_SURCHARGE },
+]
+export const DEFAULT_SIZE = '12oz'
 
 export const LEVEL_ORDER = ['25%', '50%', 'Regular', 'Sweet']
 
@@ -18,6 +27,7 @@ export const MILK_ELIGIBLE_DRINKS = [
   'matcha-sea-salt',
   'mango-matcha-bliss',
   'oreo-cloud-matcha',
+  'blueberry-matcha',
 ]
 
 // Featured drinks get the larger highlighted card treatment at the top of
@@ -77,6 +87,14 @@ export const MENU_DRINKS = [
     price: 200,
     badge: 'New',
   },
+  {
+    key: 'blueberry-matcha',
+    name: 'Blueberry Matcha',
+    img: '/assets/blueberry-matcha.jpg',
+    imgAlt: 'Blueberry Matcha, matcha over creamy milk and a blueberry layer, in a Mori Matcha cup',
+    price: 190,
+    badge: 'New',
+  },
 ]
 
 // Add real reviews here as customers send them (e.g. via Instagram DM).
@@ -133,4 +151,13 @@ export function formatPeso(n) {
 
 export function milkSurcharge(milk) {
   return milk && milk !== 'Regular Milk' ? MILK_SURCHARGE : 0
+}
+
+export function sizeSurcharge(size) {
+  return SIZES.find((s) => s.key === size)?.surcharge ?? 0
+}
+
+// What one cup costs: the drink's 12oz price, plus 16oz and oat milk if chosen.
+export function unitPriceFor(basePrice, size, milk) {
+  return basePrice + sizeSurcharge(size) + milkSurcharge(milk)
 }

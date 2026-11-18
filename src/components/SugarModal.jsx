@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { LEVEL_ORDER, MILK_ELIGIBLE_DRINKS, MILK_OPTIONS, MILK_SURCHARGE, SUGAR_DATA, formatPeso, milkSurcharge } from '../data/menu'
+import { DEFAULT_SIZE, LEVEL_ORDER, MILK_ELIGIBLE_DRINKS, MILK_OPTIONS, MILK_SURCHARGE, SIZES, SUGAR_DATA, formatPeso, unitPriceFor } from '../data/menu'
 
 export default function SugarModal({ drink, onClose, onAddToCart }) {
   const [hidden, setHidden] = useState(true)
   const [openClass, setOpenClass] = useState(false)
+  const [size, setSize] = useState(DEFAULT_SIZE)
   const [level, setLevel] = useState('Regular')
   const [milk, setMilk] = useState('Regular Milk')
   const [qty, setQty] = useState(1)
@@ -20,6 +21,7 @@ export default function SugarModal({ drink, onClose, onAddToCart }) {
   useEffect(() => {
     if (drink) {
       lastFocusedRef.current = document.activeElement
+      setSize(DEFAULT_SIZE)
       setLevel('Regular')
       setMilk('Regular Milk')
       setQty(1)
@@ -57,10 +59,10 @@ export default function SugarModal({ drink, onClose, onAddToCart }) {
 
   const sugarData = SUGAR_DATA[displayDrink.key]
   const isMilkEligible = MILK_ELIGIBLE_DRINKS.indexOf(displayDrink.key) !== -1
-  const unitPrice = displayDrink.price + milkSurcharge(milk)
+  const unitPrice = unitPriceFor(displayDrink.price, size, milk)
 
   function handleAddToCart() {
-    onAddToCart(displayDrink.key, displayDrink.name, level, milk, unitPrice, qty)
+    onAddToCart(displayDrink.key, displayDrink.name, level, milk, unitPrice, qty, size)
     setAdded(true)
     setTimeout(() => {
       handleClose()
@@ -88,6 +90,21 @@ export default function SugarModal({ drink, onClose, onAddToCart }) {
           </div>
           <div className="sugar-modal-body">
             <h3 id="sugar-modal-title">{displayDrink.name}</h3>
+            <p className="sugar-modal-hint">Choose your size</p>
+            <div className="sugar-levels size-choices" role="group" aria-label="Size">
+              {SIZES.map((sz) => (
+                <button
+                  key={sz.key}
+                  type="button"
+                  className={'sugar-level-btn' + (size === sz.key ? ' is-active' : '')}
+                  aria-pressed={size === sz.key}
+                  onClick={() => setSize(sz.key)}
+                >
+                  {sz.surcharge ? sz.label + ' +' + formatPeso(sz.surcharge) : sz.label}
+                </button>
+              ))}
+            </div>
+
             <p className="sugar-modal-hint">Choose your sugar level</p>
             <div className="sugar-levels" role="group" aria-label="Sugar level">
               {LEVEL_ORDER.map((lvl) => (

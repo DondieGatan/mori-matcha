@@ -25,8 +25,8 @@ export default function App() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [bumpKey, setBumpKey] = useState(0)
 
-  function handleAddToCart(drinkKey, name, level, milk, unitPrice, qty) {
-    cart.addToCart(drinkKey, name, level, milk, unitPrice, qty)
+  function handleAddToCart(drinkKey, name, level, milk, unitPrice, qty, size) {
+    cart.addToCart(drinkKey, name, level, milk, unitPrice, qty, size)
     setBumpKey((k) => k + 1)
   }
 

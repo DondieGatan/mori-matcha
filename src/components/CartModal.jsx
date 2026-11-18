@@ -4,7 +4,7 @@ import { submitOrder } from '../data/orderLog'
 
 function buildOrderLines(cart) {
   return cart.map((item) => {
-    let detail = item.level + ' sugar'
+    let detail = (item.size ? item.size + ', ' : '') + item.level + ' sugar'
     if (item.milk && item.milk !== 'Regular Milk') detail += ', ' + item.milk
     return item.qty + 'x ' + item.name + ' (' + detail + ') — ' + formatPeso(item.unitPrice * item.qty)
   })
@@ -14,6 +14,7 @@ function buildOrderItems(cart) {
   return cart.map((item) => ({
     name: item.name,
     level: item.level,
+    size: item.size,
     milk: item.milk,
     qty: item.qty,
     unitPrice: item.unitPrice,
@@ -120,7 +121,7 @@ export default function CartModal({ isOpen, cart, orderNumber, cartTotal, onClos
         <div className="cart-steps">
           <p className="cart-steps-title">How Ordering Works</p>
           <ol>
-            <li>Pick your drinks, sugar level, and milk, then add them to your cart.</li>
+            <li>Pick your drinks, size, sugar level, and milk, then add them to your cart.</li>
             <li>Review your order below, then tap "Copy Order for Instagram."</li>
             <li>Tap "Send Order via Instagram" and paste your order into the chat.</li>
             <li>We'll reply with GCash, BDO, Maya, or cash details to confirm.</li>
@@ -130,7 +131,7 @@ export default function CartModal({ isOpen, cart, orderNumber, cartTotal, onClos
         </div>
         <div className="cart-items">
           {cart.map((item) => {
-            let metaText = item.level + ' sugar'
+            let metaText = (item.size ? item.size + ' · ' : '') + item.level + ' sugar'
             if (item.milk && item.milk !== 'Regular Milk') metaText += ' · ' + item.milk
             return (
               <div className="cart-item" key={item.id}>

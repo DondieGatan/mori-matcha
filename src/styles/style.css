@@ -326,6 +326,13 @@ img { max-width: 100%; display: block; }
 
 .section-title.center { text-align: center; }
 
+.menu-size-note {
+  margin: -28px 0 36px;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
 /* Menu */
 .featured-grid {
   display: grid;
@@ -467,10 +474,26 @@ img { max-width: 100%; display: block; }
   .featured-item { flex-wrap: wrap; justify-content: center; text-align: center; }
 }
 
+/* Flex with centred rows (rather than a grid) so a last row with fewer tiles, such as 5 drinks in 4 columns, sits in the middle. */
 .menu-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 18px;
+}
+
+.menu-grid > .menu-tile { flex: 0 0 calc((100% - 54px) / 4); }
+
+@media (max-width: 1023px) {
+  .menu-grid > .menu-tile { flex-basis: calc((100% - 36px) / 3); }
+}
+
+@media (max-width: 775px) {
+  .menu-grid > .menu-tile { flex-basis: calc((100% - 18px) / 2); }
+}
+
+@media (max-width: 525px) {
+  .menu-grid > .menu-tile { flex-basis: 100%; }
 }
 
 .menu-tile {
