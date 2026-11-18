@@ -100,7 +100,7 @@ export default function SugarModal({ drink, onClose, onAddToCart }) {
                   aria-pressed={size === sz.key}
                   onClick={() => setSize(sz.key)}
                 >
-                  {sz.surcharge ? sz.label + ' +' + formatPeso(sz.surcharge) : sz.label}
+                  {sz.label}
                 </button>
               ))}
             </div>

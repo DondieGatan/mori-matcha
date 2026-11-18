@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { FEATURED_DRINKS, MENU_DRINKS, SIZE_SURCHARGE, formatPeso } from '../data/menu'
+import { FEATURED_DRINKS, MENU_DRINKS, formatPeso } from '../data/menu'
 import { useReveal } from '../hooks/useReveal'
 
 function FeaturedItem({ drink, index, onOpen, isUnavailable, isComingSoon }) {
@@ -163,7 +163,7 @@ export default function MenuSection({ onOpenSugarModal, unavailableKeys = [], co
         <p className="eyebrow center">The Menu</p>
         <h2 className="section-title center">Build Your Matcha</h2>
         <p className="menu-size-note">
-          Every drink comes in 12oz or 16oz. Prices shown are for 12oz; 16oz is +{formatPeso(SIZE_SURCHARGE)}.
+          Every drink comes in 12oz or 16oz. Prices shown are for 12oz.
         </p>
 
         <div className="featured-grid">
