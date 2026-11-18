@@ -118,7 +118,7 @@ stamps or a free drink until staff extend it, and the server enforces that, not 
 its link and number off but erases nothing (stamps, history and the "one stamp per order" rule are kept), and it can be restored.
 Cards whose last valid day is within 14 days are marked "expires soon" (on the customer's card and in the staff list), and the staff panel
 has a heads-up bar with the expired / expiring counts plus a filter for each. Nothing is sent to anyone: there are no emails or push messages.
-`npm test` runs `tests/loyalty.test.mjs` (66 tests) and `tests/menu.test.mjs` (13 tests for sizes, prices and what the assistant knows's menu answers). The loyalty tests run against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
+`npm test` runs `tests/loyalty.test.mjs` (66 tests) and `tests/menu.test.mjs` (13 tests for sizes, prices and what the assistant knows). The loyalty tests run against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
 double stamping, racing requests, replayed redemptions, guessed or replaced links, injection, editing history).
 
 ## Structure
