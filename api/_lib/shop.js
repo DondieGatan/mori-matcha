@@ -35,7 +35,7 @@ export const DRINKS = [...FEATURED_DRINKS, ...MENU_DRINKS].map((d) => ({
 const PRICES = DRINKS.map((d) => d.price)
 // Prices on the menu are for 12oz; 16oz adds SIZE_SURCHARGE, so the top of the range is the dearest drink in 16oz.
 const PRICE_RANGE = `${formatPeso(Math.min(...PRICES))} (12oz) to ${formatPeso(Math.max(...PRICES) + SIZE_SURCHARGE)} (16oz)`
-const SIZES_TEXT = `Every drink comes in two sizes: 12oz at the listed price, or 16oz for ${formatPeso(SIZE_SURCHARGE)} more.`
+const SIZES_TEXT = `Every drink comes in two sizes, 12oz and 16oz. The menu shows the 12oz price, and the drink sheet shows the price for the size the customer picks.`
 const sizePrices = (d) => `${formatPeso(d.price)} for 12oz or ${formatPeso(d.price + SIZE_SURCHARGE)} for 16oz`
 const NEW_DRINKS = DRINKS.filter((d) => d.isNew).map((d) => d.name)
 
@@ -167,7 +167,7 @@ STATUS RIGHT NOW (Manila time): ${openStatus(date)}.
 
 DRINKS (prices in Philippine pesos, from ${PRICE_RANGE}; new drinks: ${NEW_DRINKS.join(', ')}):
 ${drinks}
-SIZES: ${SIZES_TEXT} Oat milk adds ${formatPeso(MILK_SURCHARGE)} on top, in either size.
+SIZES: ${SIZES_TEXT} Each drink's price for both sizes is listed above. Oat milk adds ${formatPeso(MILK_SURCHARGE)} in either size.
 Every drink is made to order. Sweetness levels are 25 percent, 50 percent, regular and sweet, measured as the amount of agave syrup or condensed milk in millilitres, as listed above. Milk options are regular milk or oat milk where offered.
 
 LIVE AVAILABILITY:
@@ -204,6 +204,7 @@ Rules:
 - Use only the facts in the CAFE FACTS section below. If something is not there (see "NOT PUBLISHED ON THE SITE"), say you are not sure and suggest messaging the café on Instagram at @mori_matchaofficial. Never invent prices, promos, hours, ingredients, health claims or policies.
 - You cannot take orders or payments yourself and cannot see anyone's order. When a customer wants to order, explain the cart and Instagram steps.
 - Broad questions such as "what is Mori Matcha all about", "tell me about the café" or "how does this website work" deserve a fuller answer: cover the main points from the facts in about four to six short sentences. Simple questions get one to three short sentences.
+- Sizes: every drink comes in 12oz and 16oz. Always give each size's full price from the facts. Never describe the 16oz as a surcharge, an extra charge or "plus" an amount, and never subtract the two prices to quote a difference.
 - Your replies are read aloud to the customer, so write plain spoken sentences: no markdown, no bullet points, no emojis, no web addresses, no symbols. Say "pesos" or use the peso sign with the number.
 - Reply in the language the customer writes in (English, Filipino or a mix). Be warm and concise.
 - Stay on topic. If asked about something unrelated to the café or this website, politely say you can only help with Mori Matcha questions.
@@ -337,7 +338,7 @@ const INTENTS = [
   {
     id: 'size',
     test: (t) => /\b(sizes?|12 ?oz|16 ?oz|ounces?|oz|large|larger|bigger|small|smaller|upsize|upgrade)\b/.test(t),
-    answer: () => `${SIZES_TEXT} You choose the size on the drink sheet before adding the drink to your cart.`,
+    answer: () => `${SIZES_TEXT} ${drinkList()}. You choose the size on the drink sheet before adding the drink to your cart.`,
   },
   {
     id: 'milk',
