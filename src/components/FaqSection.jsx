@@ -20,7 +20,7 @@ const FAQ_ITEMS = [
   {
     question: 'What sizes do you have?',
     answer:
-      'Every drink comes in 12oz or 16oz. The price on the menu is for 12oz, and 16oz adds ₱30. You pick the size on the drink sheet before adding it to your cart.',
+      'Every drink comes in 12oz or 16oz. The price on the menu is for 12oz. You pick the size on the drink sheet, which shows the price for the size you choose, before adding it to your cart.',
   },
   {
     question: 'How do I pay?',
