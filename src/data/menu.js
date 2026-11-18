@@ -56,6 +56,14 @@ export const FEATURED_DRINKS = [
 
 export const MENU_DRINKS = [
   {
+    key: 'blueberry-matcha',
+    name: 'Blueberry Matcha',
+    img: '/assets/blueberry-matcha.jpg',
+    imgAlt: 'Blueberry Matcha, matcha over creamy milk and a blueberry layer, in a Mori Matcha cup',
+    price: 190,
+    badge: 'New',
+  },
+  {
     key: 'ube-matcha-latte',
     name: 'Ube Matcha Latte',
     img: '/assets/ube-matcha-coconut.jpg',
@@ -85,14 +93,6 @@ export const MENU_DRINKS = [
     img: '/assets/oreo-cloud-matcha.jpg',
     imgAlt: 'Oreo Cloud Matcha, matcha over creamy milk and cookie crumbs, topped with an Oreo cookie',
     price: 200,
-    badge: 'New',
-  },
-  {
-    key: 'blueberry-matcha',
-    name: 'Blueberry Matcha',
-    img: '/assets/blueberry-matcha.jpg',
-    imgAlt: 'Blueberry Matcha, matcha over creamy milk and a blueberry layer, in a Mori Matcha cup',
-    price: 190,
     badge: 'New',
   },
 ]
