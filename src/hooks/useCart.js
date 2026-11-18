@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { DEFAULT_SIZE } from '../data/menu'
 
 const CART_STORAGE_KEY = 'mori-matcha-cart'
 const ORDER_NUMBER_KEY = 'mori-matcha-order-number'
@@ -6,7 +7,8 @@ const ORDER_NUMBER_KEY = 'mori-matcha-order-number'
 function readCart() {
   try {
     const saved = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || '[]')
-    return Array.isArray(saved) ? saved : []
+    // Carts saved before sizes existed had only one size, which is the 12oz cup.
+    return Array.isArray(saved) ? saved.map((i) => ({ ...i, size: i.size || DEFAULT_SIZE })) : []
   } catch (e) {
     return []
   }
@@ -67,21 +69,22 @@ export function useCart() {
     return current
   }, [orderNumber])
 
-  const addToCart = useCallback((drinkKey, name, level, milk, unitPrice, qty) => {
+  const addToCart = useCallback((drinkKey, name, level, milk, unitPrice, qty, size = DEFAULT_SIZE) => {
     ensureOrderNumber()
     setCart((prev) => {
-      const existing = prev.find((i) => i.drinkKey === drinkKey && i.level === level && i.milk === milk)
+      const existing = prev.find((i) => i.drinkKey === drinkKey && i.level === level && i.milk === milk && i.size === size)
       if (existing) {
         return prev.map((i) => (i === existing ? { ...i, qty: i.qty + qty } : i))
       }
       return [
         ...prev,
         {
-          id: drinkKey + '|' + level + '|' + milk + '|' + Date.now(),
+          id: drinkKey + '|' + size + '|' + level + '|' + milk + '|' + Date.now(),
           drinkKey,
           name,
           level,
           milk,
+          size,
           unitPrice,
           qty,
         },

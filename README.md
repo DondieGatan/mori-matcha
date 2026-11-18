@@ -11,12 +11,14 @@ database behind it.
 [Demo video on my portfolio](https://dondiegatan.github.io/dondiegatan-portfolio/projects.html#mori-matcha) · built by
 [Dondie Godwin Gatan](https://dondiegatan.github.io/dondiegatan-portfolio/)
 
-**Try it in a minute (no account needed):** open the menu, tap a drink, pick a sugar level and milk, add it to the
+**Try it in a minute (no account needed):** open the menu, tap a drink, pick a size (12oz or 16oz), sugar level and milk, add it to the
 cart, and open the cart. Then visit [/party-cart](https://mori-matcha-inky.vercel.app/party-cart) and build an
 event inquiry. Nothing is sent unless you press the Instagram button, so it is safe to click around.
 
 ## Features
 
+- **Two sizes on every drink:** the listed price is the 12oz cup and 16oz adds a flat ₱30 (oat milk adds ₱20 on top). The size travels
+  with the cart line, the Instagram message and the order log, and the assistant answers size and price questions from the same data.
 - **Cart-based ordering** with a built-in "How ordering works" guide. Orders are written to a Postgres order log
   through a serverless function, with rate limiting on submission and an order number the customer pastes into
   Instagram to confirm.
@@ -116,7 +118,7 @@ stamps or a free drink until staff extend it, and the server enforces that, not 
 its link and number off but erases nothing (stamps, history and the "one stamp per order" rule are kept), and it can be restored.
 Cards whose last valid day is within 14 days are marked "expires soon" (on the customer's card and in the staff list), and the staff panel
 has a heads-up bar with the expired / expiring counts plus a filter for each. Nothing is sent to anyone: there are no emails or push messages.
-`npm test` runs `tests/loyalty.test.mjs`: 66 tests against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
+`npm test` runs `tests/loyalty.test.mjs` (66 tests) and `tests/menu.test.mjs` (9 tests for sizes, prices and the assistant's menu answers). The loyalty tests run against a real in-memory Postgres (PGlite) that try each cheat (fake orders,
 double stamping, racing requests, replayed redemptions, guessed or replaced links, injection, editing history).
 
 ## Structure

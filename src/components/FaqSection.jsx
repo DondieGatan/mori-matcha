@@ -6,7 +6,7 @@ const FAQ_ITEMS = [
     question: 'How do I order?',
     answer: (
       <>
-        Tap any drink on <a href="#menu">the menu</a>, pick your sugar level (and milk, for drinks that offer it) and
+        Tap any drink on <a href="#menu">the menu</a>, pick your size (12oz or 16oz), your sugar level (and milk, for drinks that offer it) and
         quantity, then add it to your cart. When you're ready, open your cart, copy your order, and send it to us on
         Instagram — your cart also shows a quick step-by-step guide to walk you through it.
       </>
@@ -16,6 +16,11 @@ const FAQ_ITEMS = [
     question: 'Can I choose how sweet my drink is?',
     answer:
       'Yes — every drink lets you pick 25%, 50%, Regular, or Sweet before adding it to your cart, so two orders of the same drink can each be made exactly how each person likes it.',
+  },
+  {
+    question: 'What sizes do you have?',
+    answer:
+      'Every drink comes in 12oz or 16oz. The price on the menu is for 12oz, and 16oz adds ₱30. You pick the size on the drink sheet before adding it to your cart.',
   },
   {
     question: 'How do I pay?',

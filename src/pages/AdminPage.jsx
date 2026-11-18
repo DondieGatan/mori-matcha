@@ -23,7 +23,7 @@ function formatTimestamp(iso) {
 function formatItems(items) {
   return items
     .map((item) => {
-      let detail = item.level + ' sugar'
+      let detail = (item.size ? item.size + ', ' : '') + item.level + ' sugar'
       if (item.milk && item.milk !== 'Regular Milk') detail += ', ' + item.milk
       return item.qty + 'x ' + item.name + ' (' + detail + ')'
     })

@@ -20,6 +20,7 @@ export const PARTY_VARIETIES = [
   'Matcha Latte',
   'Matcha Sea Salt',
   'Strawberry Matcha',
+  'Blueberry Matcha',
   'Mango Matcha',
   'Ube Matcha',
   'Oreo Cloud Matcha',

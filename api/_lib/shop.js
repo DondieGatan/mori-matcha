@@ -7,6 +7,7 @@ import {
   SUGAR_DATA,
   LEVEL_ORDER,
   MILK_SURCHARGE,
+  SIZE_SURCHARGE,
   MILK_ELIGIBLE_DRINKS,
   HOURS_TABLE,
   OPEN_HOURS,
@@ -32,7 +33,10 @@ export const DRINKS = [...FEATURED_DRINKS, ...MENU_DRINKS].map((d) => ({
 }))
 
 const PRICES = DRINKS.map((d) => d.price)
-const PRICE_RANGE = `${formatPeso(Math.min(...PRICES))} to ${formatPeso(Math.max(...PRICES))}`
+// Prices on the menu are for 12oz; 16oz adds SIZE_SURCHARGE, so the top of the range is the dearest drink in 16oz.
+const PRICE_RANGE = `${formatPeso(Math.min(...PRICES))} (12oz) to ${formatPeso(Math.max(...PRICES) + SIZE_SURCHARGE)} (16oz)`
+const SIZES_TEXT = `Every drink comes in two sizes: 12oz at the listed price, or 16oz for ${formatPeso(SIZE_SURCHARGE)} more.`
+const sizePrices = (d) => `${formatPeso(d.price)} for 12oz or ${formatPeso(d.price + SIZE_SURCHARGE)} for 16oz`
 const NEW_DRINKS = DRINKS.filter((d) => d.isNew).map((d) => d.name)
 
 function manilaNow(date = new Date()) {
@@ -87,7 +91,7 @@ function availabilityNote(statuses) {
 const ABOUT =
   `Mori Matcha began as a home café in Imus, Cavite, built on a simple idea: matcha made properly, whisked fresh for every cup, ` +
   `never sitting around pre-made. Every drink is built to order, using ceremonial-grade matcha, the way you like it: classic and clean, ` +
-  `creamy ube, bright strawberry, mango, or Oreo cloud. Drinks cost ${PRICE_RANGE}.`
+  `creamy ube, bright strawberry, blueberry, mango, or Oreo cloud. Drinks cost ${PRICE_RANGE}.`
 
 const RITUAL =
   'The café describes its ritual in three words: whisk, which means every drink is freshly prepared; pour, which means you build your own matcha; and enjoy, every sip. The party cart uses the line "Whisk. Pour. Enjoy."'
@@ -99,7 +103,7 @@ const REVIEWS_SUMMARY =
 
 const WEBSITE =
   `The website is the café's online menu and ordering page. The home page has the menu, the story, opening hours with a live open or closed notice in Philippine time, ` +
-  `frequently asked questions, customer reviews and contact links. Tapping a drink opens a sheet to pick the sweetness level, the milk where offered, and the quantity, and then add it to the cart. ` +
+  `frequently asked questions, customer reviews and contact links. Tapping a drink opens a sheet to pick the size (12oz or 16oz), the sweetness level, the milk where offered, and the quantity, and then add it to the cart. ` +
   `New drinks carry a "New" badge, and a drink that is unavailable or coming soon is greyed out on the menu; this updates automatically every few seconds. ` +
   `A View Cart button stays on screen. The cart is saved on your own device. The website does not take payment and does not place orders by itself: ` +
   `from the cart you copy your order and send it to the café on Instagram, and the café confirms it there. ` +
@@ -108,11 +112,11 @@ const WEBSITE =
 
 // A shorter version for the keyword fallback, since replies are read aloud.
 const WEBSITE_SHORT =
-  `The website is the café's online menu and ordering page. Tap a drink to choose its sweetness, milk and quantity, add it to your cart, then copy your order and send it to us on Instagram, where we confirm it and share payment details. ` +
+  `The website is the café's online menu and ordering page. Tap a drink to choose its size, sweetness, milk and quantity, add it to your cart, then copy your order and send it to us on Instagram, where we confirm it and share payment details. ` +
   `The website itself does not take payment. The menu shows live availability, the Visit Us section shows whether we are open right now, there is a Party Cart page for events, and the site can be installed on a phone like an app.`
 
 const ORDER_FLOW =
-  `Pick your drinks, sweetness and milk, then add them to your cart. Review the order in the cart, then tap Copy Order for Instagram. ` +
+  `Pick your drinks, size, sweetness and milk, then add them to your cart. Review the order in the cart, then tap Copy Order for Instagram. ` +
   `Tap Send Order via Instagram and paste your order into the chat. The café replies with GCash, BDO, Maya or cash details to confirm, ` +
   `and once confirmed they start preparing your drink.`
 
@@ -143,7 +147,7 @@ const BUILT_BY = 'The website and this assistant were built by Dondie Godwin Gat
 export function buildFacts(statuses = {}, date = new Date()) {
   const drinks = DRINKS.map(
     (d) =>
-      `- ${d.name}: ${formatPeso(d.price)}${d.isNew ? ' (new)' : ''}.${d.description ? ' ' + d.description : ''} ` +
+      `- ${d.name}: ${sizePrices(d)}${d.isNew ? ' (new)' : ''}.${d.description ? ' ' + d.description : ''} ` +
       `Sweetness: ${d.levels}, sweetened with ${d.sweetener.toLowerCase()}. ` +
       (d.oatMilk ? `Regular or oat milk (oat milk adds ${formatPeso(MILK_SURCHARGE)}).` : 'Regular milk only.'),
   ).join('\n')
@@ -163,6 +167,7 @@ STATUS RIGHT NOW (Manila time): ${openStatus(date)}.
 
 DRINKS (prices in Philippine pesos, from ${PRICE_RANGE}; new drinks: ${NEW_DRINKS.join(', ')}):
 ${drinks}
+SIZES: ${SIZES_TEXT} Oat milk adds ${formatPeso(MILK_SURCHARGE)} on top, in either size.
 Every drink is made to order. Sweetness levels are 25 percent, 50 percent, regular and sweet, measured as the amount of agave syrup or condensed milk in millilitres, as listed above. Milk options are regular milk or oat milk where offered.
 
 LIVE AVAILABILITY:
@@ -220,10 +225,11 @@ const ALIASES = {
   'strawberry-matcha-latte': ['strawberry'],
   'mango-matcha-bliss': ['mango'],
   'oreo-cloud-matcha': ['oreo'],
+  'blueberry-matcha': ['blueberry'],
 }
 
 const money = formatPeso
-const drinkList = () => DRINKS.map((d) => `${d.name} ${money(d.price)}`).join(', ')
+const drinkList = () => DRINKS.map((d) => `${d.name} ${money(d.price)} (12oz) or ${money(d.price + SIZE_SURCHARGE)} (16oz)`).join(', ')
 
 const INTENTS = [
   {
@@ -234,7 +240,7 @@ const INTENTS = [
       const st = s[d.key]
       const state = st === 'unavailable' ? ' It is unavailable right now.' : st === 'coming_soon' ? ' It is coming soon and cannot be ordered yet.' : ''
       return (
-        `The ${d.name} is ${money(d.price)}${d.isNew ? ' and is one of our new drinks' : ''}.${d.description ? ' ' + d.description : ''} ` +
+        `The ${d.name} is ${sizePrices(d)}${d.isNew ? ' and is one of our new drinks' : ''}.${d.description ? ' ' + d.description : ''} ` +
         `You can choose 25 percent, 50 percent, regular or sweet${d.oatMilk ? `, and oat milk is available for ${money(MILK_SURCHARGE)} more` : ''}.${state}`
       )
     },
@@ -329,6 +335,11 @@ const INTENTS = [
       'Every drink lets you choose 25 percent, 50 percent, regular or sweet before adding it to your cart. The amount is measured in millilitres of agave syrup, or condensed milk for the Ube and Oreo drinks, and it is shown on the drink sheet.',
   },
   {
+    id: 'size',
+    test: (t) => /\b(sizes?|12 ?oz|16 ?oz|ounces?|oz|large|larger|bigger|small|smaller|upsize|upgrade)\b/.test(t),
+    answer: () => `${SIZES_TEXT} You choose the size on the drink sheet before adding the drink to your cart.`,
+  },
+  {
     id: 'milk',
     test: (t) => /\b(oat|milk|gatas|dairy|vegan|lactose|non.?dairy|plant)\b/.test(t),
     answer: () =>
@@ -378,7 +389,7 @@ const INTENTS = [
   {
     id: 'menu',
     test: (t) => /\b(menu|drink|drinks|price|prices|how much|magkano|cost|costs|flavor|flavors|flavour|flavours|what do you (have|sell|serve|offer)|sell|serve|offer|cheapest|expensive|range)\b/.test(t),
-    answer: () => `Our drinks are ${drinkList()}. Every drink is made to order, with your choice of sweetness, and most can be made with oat milk for ${money(MILK_SURCHARGE)} more.`,
+    answer: () => `Our drinks are ${drinkList()}. Every drink is made to order, with your choice of size and sweetness, and most can be made with oat milk for ${money(MILK_SURCHARGE)} more.`,
   },
   {
     id: 'thanks',
@@ -406,8 +417,10 @@ export function ruleAnswer(message, statuses = {}, date = new Date()) {
 
   // A greeting or thanks only counts when it is the whole message, so "hi, how much is ube" gets the price.
   if (hits.length > 1) hits = hits.filter((id) => id !== 'greeting' && id !== 'thanks' && id !== 'bye')
-  // A drink named in the question already gives its price, so skip the general menu list.
-  if (hits.includes('drink')) hits = hits.filter((id) => id !== 'menu')
+  // A drink named in the question already gives its price and both sizes, so skip the general menu list and size answer.
+  if (hits.includes('drink')) hits = hits.filter((id) => id !== 'menu' && id !== 'size')
+  // A size question is answered by the size answer, not the whole price list.
+  if (hits.includes('size')) hits = hits.filter((id) => id !== 'menu')
   // "The classic package" is about party carts, not the Classic Matcha Latte.
   if (hits.includes('party')) hits = hits.filter((id) => id !== 'drink')
   // "What is Mori Matcha about" is a broad question on its own; add at most one related answer to it.
