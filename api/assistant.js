@@ -47,7 +47,9 @@ async function liveAvailability() {
 export function cleanReply(text) {
   return String(text || '')
     .replace(/https?:\/\/\S+/g, '')
-    .replace(/[*_`#>~|]/g, '')
+    .replace(/[*`#>~|]/g, '')
+    // Markdown underscores (_italic_) go, but an underscore inside a word stays: the Instagram handle is mori_matchaofficial.
+    .replace(/(?<![A-Za-z0-9])_+|_+(?![A-Za-z0-9])/g, '')
     .replace(/\p{Extended_Pictographic}/gu, '')
     .replace(/^\s*[-•]\s+/gm, '')
     .replace(/\s+/g, ' ')

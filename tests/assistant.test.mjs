@@ -71,6 +71,11 @@ test('attempts to change the rules or read the instructions get the normal fallb
   }
 })
 
+test('cleaning a reply keeps the underscore in the Instagram handle but drops markdown underscores', () => {
+  assert.equal(cleanReply('Message us at @mori_matchaofficial on Instagram'), 'Message us at @mori_matchaofficial on Instagram')
+  assert.equal(cleanReply('This is _very_ good and __bold__ too'), 'This is very good and bold too')
+})
+
 test('replies are cleaned of links, markdown and emoji before they reach the customer', () => {
   assert.equal(cleanReply('Visit https://evil.example now! **Bold** and a 😀 smile'), 'Visit now! Bold and a smile')
   assert.ok(cleanReply('x'.repeat(5000)).length <= 1100)
