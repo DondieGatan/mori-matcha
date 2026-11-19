@@ -261,7 +261,7 @@ export default function Assistant({ cartCount = 0 }) {
               className={'assistant-mic' + (voiceIn.listening ? ' is-listening' : '')}
               aria-pressed={voiceIn.listening}
               aria-label={voiceIn.listening ? 'Stop listening' : 'Speak your question'}
-              title={voiceIn.listening ? 'Stop listening' : 'Speak your question'}
+              title={voiceIn.listening ? 'Stop listening' : "Speak your question (uses your browser's speech service)"}
               disabled={busy}
               onClick={toggleMic}
             >
@@ -275,7 +275,7 @@ export default function Assistant({ cartCount = 0 }) {
           </button>
         </form>
         <p className="assistant-foot">
-          AI assistant, so answers may not always be exact.{voiceIn.supported && " Voice input uses your browser's speech service."} To order, use the cart or{' '}
+          To order, use the cart or{' '}
           <a href={INSTAGRAM_DM_URL} target="_blank" rel="noopener">
             message us on Instagram
           </a>

@@ -55,12 +55,23 @@ export function cleanReply(text) {
     .slice(0, 1100)
 }
 
-async function askModel(history, facts, apiKey) {
-  const body = {
+// Gemini's own safety filters, set to block anything medium-or-worse for harassment, hate, sexual or dangerous content. A blocked
+// reply has no text, so the customer gets the café's rule-based answer instead.
+const SAFETY_SETTINGS = ['HARM_CATEGORY_HARASSMENT', 'HARM_CATEGORY_HATE_SPEECH', 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'HARM_CATEGORY_DANGEROUS_CONTENT'].map(
+  (category) => ({ category, threshold: 'BLOCK_MEDIUM_AND_ABOVE' }),
+)
+
+export function requestBody(history, facts) {
+  return {
     systemInstruction: { parts: [{ text: SYSTEM_PROMPT + facts }] },
     contents: history.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.text }] })),
     generationConfig: { temperature: 0.4, maxOutputTokens: 600, thinkingConfig: { thinkingBudget: 0 } },
+    safetySettings: SAFETY_SETTINGS,
   }
+}
+
+async function askModel(history, facts, apiKey) {
+  const body = requestBody(history, facts)
   for (const model of MODELS) {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS)
