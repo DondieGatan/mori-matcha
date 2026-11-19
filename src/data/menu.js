@@ -59,7 +59,7 @@ export const MENU_DRINKS = [
     key: 'blueberry-matcha',
     name: 'Blueberry Matcha',
     img: '/assets/blueberry-matcha.jpg',
-    imgAlt: 'Blueberry Matcha, matcha over creamy milk and a blueberry layer, in a Mori Matcha cup',
+    imgAlt: 'Blueberry Matcha, matcha over creamy milk and a swirled blueberry layer, in a clear cup with ice',
     price: 190,
     badge: 'New',
   },
